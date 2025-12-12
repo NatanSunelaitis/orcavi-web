@@ -256,7 +256,8 @@ export const firestoreService = {
     }
 
     const { total } = parentTransaction.installments;
-    const installmentAmount = parentTransaction.amount / total;
+    // Arredondar para 2 casas decimais
+    const installmentAmount = Math.round((parentTransaction.amount / total) * 100) / 100;
     const startDate = parseISO(parentTransaction.date);
 
     for (let i = 2; i <= total; i++) {
