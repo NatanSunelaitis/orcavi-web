@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { AccountType, Account } from '../types';
+import { AccountType, Account, TransactionType } from '../types';
 import { Wallet, Plus, CreditCard, Building, PiggyBank } from 'lucide-react';
 
 const Accounts: React.FC = () => {
-  const { accounts, addAccount } = useFinance();
+  const { accounts, goals, transactions, addAccount } = useFinance();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAccount, setNewAccount] = useState<Partial<Account>>({
     name: '',
@@ -42,6 +42,18 @@ const Accounts: React.FC = () => {
      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
   );
 
+  // Calculate reserved amount for each account
+  // Calcula baseado nas contribuições (GOAL_CONTRIBUTION) que saíram desta conta
+  const getReservedAmount = (accountId: string) => {
+    return transactions
+      .filter(t =>
+        t.accountId === accountId &&
+        t.type === TransactionType.GOAL_CONTRIBUTION &&
+        t.isPaid
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -61,6 +73,9 @@ const Accounts: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accounts.map((acc) => {
           const Icon = getIcon(acc.type);
+          const reservedAmount = getReservedAmount(acc.id);
+          const availableAmount = acc.balance - reservedAmount;
+
           return (
             <div key={acc.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
                <div className={`absolute top-0 left-0 w-1.5 h-full ${acc.color}`}></div>
@@ -71,7 +86,20 @@ const Accounts: React.FC = () => {
                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{acc.type}</span>
                </div>
                <h3 className="text-lg font-semibold text-slate-800 mb-1">{acc.name}</h3>
-               <p className="text-2xl font-bold text-slate-900">R$ {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+               <p className="text-2xl font-bold text-slate-900 mb-3">R$ {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+
+               {reservedAmount > 0 && (
+                 <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-sm">
+                   <div className="flex justify-between">
+                     <span className="text-slate-500">Disponível:</span>
+                     <span className="font-semibold text-green-600">R$ {availableAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex justify-between">
+                     <span className="text-slate-500">Reservado em metas:</span>
+                     <span className="font-semibold text-purple-600">R$ {reservedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                   </div>
+                 </div>
+               )}
             </div>
           );
         })}

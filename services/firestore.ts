@@ -93,6 +93,19 @@ export const firestoreService = {
         await this.generateInstallments(userId, newTransaction);
       }
 
+      // Atualizar meta se a transação for destinada a uma meta (receita com goalId)
+      if (transaction.goalId && transaction.type === TransactionType.INCOME && transaction.isPaid) {
+        console.log('Atualizando meta com goalId:', transaction.goalId);
+        const goalDoc = await getDoc(doc(db, 'users', userId, 'goals', transaction.goalId));
+        const goal = goalDoc.data();
+        if (goal) {
+          await this.updateGoal(userId, transaction.goalId, {
+            currentAmount: goal.currentAmount + transaction.amount
+          });
+          console.log('Meta atualizada com sucesso!');
+        }
+      }
+
       console.log('Transação criada com sucesso!');
       return newTransaction;
     } catch (error) {
@@ -149,6 +162,19 @@ export const firestoreService = {
           : account.balance + transaction.amount;
         await this.updateAccount(userId, account.id, { balance: revertedBalance });
       }
+
+      // Reverter meta se a transação tiver goalId (receita destinada a meta ou contribuição)
+      if (transaction.goalId && (transaction.type === TransactionType.INCOME || transaction.type === TransactionType.GOAL_CONTRIBUTION)) {
+        const goalDoc = await getDoc(doc(db, 'users', userId, 'goals', transaction.goalId));
+        const goal = goalDoc.data();
+        if (goal) {
+          const newCurrentAmount = Math.max(0, goal.currentAmount - transaction.amount);
+          await this.updateGoal(userId, transaction.goalId, {
+            currentAmount: newCurrentAmount
+          });
+          console.log('Meta revertida após exclusão de transação');
+        }
+      }
     }
 
     await deleteDoc(doc(db, 'users', userId, 'transactions', transactionId));
@@ -185,13 +211,28 @@ export const firestoreService = {
     await deleteDoc(doc(db, 'users', userId, 'goals', goalId));
   },
 
-  async contributeToGoal(userId: string, goalId: string, amount: number): Promise<void> {
+  async contributeToGoal(userId: string, goalId: string, amount: number, accountId: string): Promise<void> {
     const goalDoc = await getDoc(doc(db, 'users', userId, 'goals', goalId));
     const goal = goalDoc.data() as Goal;
     if (goal) {
+      // Atualizar o valor atual da meta
       await this.updateGoal(userId, goalId, {
         currentAmount: goal.currentAmount + amount
       });
+
+      // Criar uma transação de contribuição para meta
+      const transaction: Omit<Transaction, 'id'> = {
+        description: `Contribuição para: ${goal.name}`,
+        amount: amount,
+        date: new Date().toISOString(),
+        type: TransactionType.GOAL_CONTRIBUTION,
+        category: 'Contribuição para Meta',
+        accountId: accountId,
+        isPaid: true,
+        goalId: goalId
+      };
+
+      await this.addTransaction(userId, transaction);
     }
   },
 
@@ -256,8 +297,16 @@ export const firestoreService = {
     }
 
     const { total } = parentTransaction.installments;
-    // Arredondar para 2 casas decimais
-    const installmentAmount = Math.round((parentTransaction.amount / total) * 100) / 100;
+    const totalAmount = parentTransaction.amount;
+
+    // Arredondar parcelas normais para 2 casas decimais
+    const regularInstallmentAmount = Math.round((totalAmount / total) * 100) / 100;
+
+    // Calcular quanto já foi distribuído nas parcelas regulares
+    const regularInstallmentsSum = regularInstallmentAmount * (total - 1);
+
+    // A primeira parcela compensa qualquer diferença de arredondamento
+    const firstInstallmentAmount = Math.round((totalAmount - regularInstallmentsSum) * 100) / 100;
     const startDate = parseISO(parentTransaction.date);
 
     for (let i = 2; i <= total; i++) {
@@ -266,7 +315,7 @@ export const firestoreService = {
       // Criar objeto sem campos undefined
       const installmentTransaction: any = {
         description: parentTransaction.description,
-        amount: installmentAmount,
+        amount: regularInstallmentAmount,
         type: parentTransaction.type,
         category: parentTransaction.category,
         accountId: parentTransaction.accountId,
@@ -287,13 +336,14 @@ export const firestoreService = {
     }
 
     // Atualizar transação principal para indicar que é a primeira parcela
+    // Primeira parcela ajusta o valor para compensar centavos perdidos
     await updateDoc(doc(db, 'users', userId, 'transactions', parentTransaction.id), {
       installments: {
         current: 1,
         total: total,
         parentTransactionId: parentTransaction.id
       },
-      amount: installmentAmount
+      amount: firstInstallmentAmount
     });
   },
 

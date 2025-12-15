@@ -3,14 +3,20 @@ import { useFinance } from '../context/FinanceContext';
 import { TransactionType, CATEGORIES, Transaction, RecurrenceFrequency } from '../types';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Filter, Edit2, Trash2, Check, X, Repeat, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
+import ConfirmDialog from './ConfirmDialog';
+import ToastContainer from './ToastContainer';
+import { useToast } from '../hooks/useToast';
 
 const Transactions: React.FC = () => {
-  const { transactions, accounts, addTransaction, updateTransaction, deleteTransaction, toggleTransactionPaid } = useFinance();
+  const { transactions, accounts, goals, addTransaction, updateTransaction, deleteTransaction, toggleTransactionPaid, contributeToGoal } = useFinance();
+  const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
   const [filterType, setFilterType] = useState<'ALL' | TransactionType>('ALL');
   const [filterPaid, setFilterPaid] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
   // New Transaction State
   const [newTrans, setNewTrans] = useState({
@@ -25,7 +31,9 @@ const Transactions: React.FC = () => {
     recurrenceFrequency: RecurrenceFrequency.MONTHLY,
     recurrenceEndDate: '',
     hasInstallments: false,
-    installmentsTotal: 2
+    installmentsTotal: 2,
+    goalId: '',
+    goalAmount: '' // Valor parcial a destinar para meta
   });
 
   const filteredTransactions = transactions
@@ -42,24 +50,28 @@ const Transactions: React.FC = () => {
 
     // Validações
     if (!newTrans.description || !newTrans.amount || !newTrans.category) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      showWarning('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
     if (!newTrans.accountId) {
-      alert('Por favor, selecione uma conta. Você precisa criar uma conta primeiro na aba "Contas".');
+      showWarning('Por favor, selecione uma conta. Você precisa criar uma conta primeiro na aba "Contas".');
       return;
     }
 
     try {
       // Criar objeto base da transação (sem campos undefined)
+      // Para evitar problema de timezone, adiciona horário meio-dia UTC
+      const [year, month, day] = newTrans.date.split('-');
+      const dateAtNoon = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0));
+
       const transactionData: any = {
         description: newTrans.description,
         amount: Number(newTrans.amount),
         type: newTrans.type,
         category: newTrans.category,
         accountId: newTrans.accountId,
-        date: new Date(newTrans.date).toISOString(),
+        date: dateAtNoon.toISOString(),
         isPaid: newTrans.isPaid
       };
 
@@ -83,18 +95,47 @@ const Transactions: React.FC = () => {
         };
       }
 
-      if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, transactionData);
-        setEditingTransaction(null);
+      // Lógica especial para receitas destinadas a metas
+      if (newTrans.goalId && newTrans.type === TransactionType.INCOME) {
+        const goalAmountValue = newTrans.goalAmount ? parseFloat(newTrans.goalAmount) : Number(newTrans.amount);
+
+        // Validar que o valor destinado não é maior que a receita
+        if (goalAmountValue > Number(newTrans.amount)) {
+          showError('O valor destinado à meta não pode ser maior que o valor da receita.');
+          return;
+        }
+
+        // Se for valor parcial, criar a receita normal primeiro
+        if (newTrans.goalAmount && parseFloat(newTrans.goalAmount) < Number(newTrans.amount)) {
+          await addTransaction(transactionData);
+
+          // Depois criar uma contribuição separada para a meta
+          await contributeToGoal(newTrans.goalId, goalAmountValue, newTrans.accountId);
+
+          showSuccess(`Receita de R$ ${Number(newTrans.amount).toFixed(2)} criada! R$ ${goalAmountValue.toFixed(2)} destinado à meta.`);
+        } else {
+          // Se for valor total, adicionar goalId na transação
+          transactionData.goalId = newTrans.goalId;
+          await addTransaction(transactionData);
+          showSuccess('Transação criada e valor destinado à meta!');
+        }
       } else {
-        await addTransaction(transactionData);
+        // Transações normais (não destinadas a meta)
+        if (editingTransaction) {
+          await updateTransaction(editingTransaction.id, transactionData);
+          setEditingTransaction(null);
+          showSuccess('Transação atualizada com sucesso!');
+        } else {
+          await addTransaction(transactionData);
+          showSuccess('Transação criada com sucesso!');
+        }
       }
 
       setIsModalOpen(false);
       resetForm();
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
-      alert('Erro ao salvar transação. Verifique o console para mais detalhes.');
+      showError('Erro ao salvar transação. Tente novamente.');
     }
   };
 
@@ -111,7 +152,9 @@ const Transactions: React.FC = () => {
       recurrenceFrequency: RecurrenceFrequency.MONTHLY,
       recurrenceEndDate: '',
       hasInstallments: false,
-      installmentsTotal: 2
+      installmentsTotal: 2,
+      goalId: '',
+      goalAmount: ''
     });
   };
 
@@ -129,15 +172,26 @@ const Transactions: React.FC = () => {
       recurrenceFrequency: transaction.recurrence?.frequency || RecurrenceFrequency.MONTHLY,
       recurrenceEndDate: transaction.recurrence?.endDate ? format(new Date(transaction.recurrence.endDate), 'yyyy-MM-dd') : '',
       hasInstallments: !!transaction.installments,
-      installmentsTotal: transaction.installments?.total || 2
+      installmentsTotal: transaction.installments?.total || 2,
+      goalId: transaction.goalId || ''
     });
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-      await deleteTransaction(id);
+  const openDeleteConfirm = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDelete = async () => {
+    if (!transactionToDelete) return;
+    try {
+      await deleteTransaction(transactionToDelete.id);
       setDeletingId(null);
+      setTransactionToDelete(null);
+      showSuccess('Transação excluída com sucesso!');
+    } catch (error) {
+      showError('Erro ao excluir transação. Tente novamente.');
     }
   };
 
@@ -316,7 +370,7 @@ const Transactions: React.FC = () => {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(t.id)}
+                          onClick={() => openDeleteConfirm(t)}
                           className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                           title="Excluir"
                         >
@@ -429,6 +483,47 @@ const Transactions: React.FC = () => {
                   </select>
                 </div>
               </div>
+
+              {/* Destinar para Meta (apenas para RECEITAS) */}
+              {newTrans.type === TransactionType.INCOME && (
+                <div className="space-y-3 border border-slate-200 rounded-lg p-3 bg-slate-50">
+                  <label className="block text-sm font-medium text-slate-700">Destinar para Meta (Opcional)</label>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                    value={newTrans.goalId}
+                    onChange={e => setNewTrans({...newTrans, goalId: e.target.value, goalAmount: ''})}
+                  >
+                    <option value="">Nenhuma meta selecionada</option>
+                    {goals.map(goal => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.name} (R$ {goal.currentAmount.toFixed(2)} / R$ {goal.targetAmount.toFixed(2)})
+                      </option>
+                    ))}
+                  </select>
+
+                  {newTrans.goalId && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor a Destinar (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max={newTrans.amount}
+                        placeholder={`Máximo: ${newTrans.amount || '0,00'}`}
+                        className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none"
+                        value={newTrans.goalAmount}
+                        onChange={e => setNewTrans({...newTrans, goalAmount: e.target.value})}
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        {newTrans.goalAmount ?
+                          `Destinando R$ ${parseFloat(newTrans.goalAmount).toFixed(2)} para a meta. Restante fica disponível na conta.` :
+                          'Deixe em branco para destinar o valor total da receita.'
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Status Pago */}
               <div className="flex items-center gap-2">
@@ -544,6 +639,25 @@ const Transactions: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Excluir Transação"
+        message={
+          transactionToDelete?.goalId
+            ? `Tem certeza que deseja excluir a transação "${transactionToDelete?.description}"?\n\n⚠️ ATENÇÃO: Esta transação está vinculada a uma meta. Ao excluí-la, o valor será revertido da meta automaticamente.\n\nEsta ação não pode ser desfeita.`
+            : `Tem certeza que deseja excluir a transação "${transactionToDelete?.description}"? Esta ação não pode ser desfeita.`
+        }
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        type="danger"
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };

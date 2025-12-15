@@ -1,6 +1,7 @@
 export enum TransactionType {
   INCOME = 'INCOME',
-  EXPENSE = 'EXPENSE'
+  EXPENSE = 'EXPENSE',
+  GOAL_CONTRIBUTION = 'GOAL_CONTRIBUTION'
 }
 
 export enum AccountType {
@@ -41,6 +42,7 @@ export interface Transaction {
   category: string;
   accountId: string;
   isPaid: boolean;
+  goalId?: string; // ID da meta (se for destinado para meta)
   installments?: {
     current: number;
     total: number;
@@ -55,6 +57,9 @@ export interface Goal {
   targetAmount: number;
   currentAmount: number;
   deadline: string;
+  imageUrl?: string;
+  accountId?: string;
+  pixKey?: string;
 }
 
 export const CATEGORIES = {
@@ -63,6 +68,9 @@ export const CATEGORIES = {
   ],
   [TransactionType.INCOME]: [
     'Salário', 'Freelance', 'Investimentos', 'Reembolso', 'Presente', 'Outros'
+  ],
+  [TransactionType.GOAL_CONTRIBUTION]: [
+    'Contribuição para Meta'
   ]
 };
 

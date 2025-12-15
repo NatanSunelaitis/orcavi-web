@@ -19,7 +19,7 @@ interface FinanceContextType {
   addGoal: (g: Omit<Goal, 'id'>) => Promise<void>;
   updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
-  contributeToGoal: (id: string, amount: number) => Promise<void>;
+  contributeToGoal: (id: string, amount: number, accountId: string) => Promise<void>;
   transferBetweenAccounts: (fromId: string, toId: string, amount: number, description: string) => Promise<void>;
 }
 
@@ -125,9 +125,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await refreshData();
   };
 
-  const contributeToGoal = async (id: string, amount: number) => {
+  const contributeToGoal = async (id: string, amount: number, accountId: string) => {
     if (!user) return;
-    await firestoreService.contributeToGoal(user.uid, id, amount);
+    await firestoreService.contributeToGoal(user.uid, id, amount, accountId);
     await refreshData();
   };
 
