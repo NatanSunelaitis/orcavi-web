@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { PLANS, PlanId, planHasAccess } from '../config/plans';
@@ -17,11 +17,18 @@ interface PlanState {
   limits: typeof PLANS['free']['limits'];
 }
 
+// Cache global para evitar múltiplas subscriptions do mesmo usuário
+const planCache: { plan: PlanId; expiresAt: string | null } | null = null;
+let globalPlan: PlanId = 'free';
+let globalExpiresAt: string | null = null;
+let channelCreated = false;
+
 export function usePlan(): PlanState {
   const { user } = useAuth();
-  const [plan, setPlan] = useState<PlanId>('free');
-  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
+  const [plan, setPlan] = useState<PlanId>(globalPlan);
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(globalExpiresAt);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -30,24 +37,30 @@ export function usePlan(): PlanState {
       return;
     }
 
-    // Busca o plano atual do usuário
     const fetchPlan = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('plan, plan_expires_at')
         .eq('id', user.uid)
         .single();
 
+      if (error) {
+        console.error('Erro ao buscar plano:', error);
+        setLoading(false);
+        return;
+      }
+
       if (data) {
-        // Verifica se o plano não expirou
         const isExpired = data.plan_expires_at
           ? new Date(data.plan_expires_at) < new Date()
           : false;
 
-        setPlan(isExpired ? 'free' : (data.plan as PlanId) ?? 'free');
+        const activePlan = isExpired ? 'free' : ((data.plan as PlanId) ?? 'free');
+        globalPlan = activePlan;
+        globalExpiresAt = data.plan_expires_at;
+        setPlan(activePlan);
         setPlanExpiresAt(data.plan_expires_at);
 
-        // Se expirou, rebaixa para free automaticamente
         if (isExpired && data.plan !== 'free') {
           await supabase
             .from('profiles')
@@ -60,23 +73,33 @@ export function usePlan(): PlanState {
 
     fetchPlan();
 
-    // Escuta mudanças em tempo real (ex: webhook atualizou o plano)
-    const channel = supabase
-      .channel('profile-plan')
+    // Cria canal com nome único por usuário para evitar conflito
+    const channelName = `plan-${user.uid}`;
+    if (channelRef.current) return;
+
+    channelRef.current = supabase
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'profiles',
         filter: `id=eq.${user.uid}`,
       }, (payload) => {
-        const newPlan = payload.new.plan as PlanId;
-        setPlan(newPlan ?? 'free');
+        const newPlan = (payload.new.plan as PlanId) ?? 'free';
+        globalPlan = newPlan;
+        globalExpiresAt = payload.new.plan_expires_at;
+        setPlan(newPlan);
         setPlanExpiresAt(payload.new.plan_expires_at);
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user?.uid]);
 
   const limits = PLANS[plan].limits;
 
@@ -88,17 +111,17 @@ export function usePlan(): PlanState {
     isFamily: planHasAccess(plan, 'family'),
     isFree: plan === 'free',
     hasAccess: (requiredPlan: PlanId) => planHasAccess(plan, requiredPlan),
-    canAddTransaction: (currentMonthCount: number) => {
+    canAddTransaction: (count: number) => {
       const limit = limits.transactionsPerMonth;
-      return limit === Infinity || currentMonthCount < limit;
+      return limit === Infinity || count < limit;
     },
-    canAddAccount: (currentCount: number) => {
+    canAddAccount: (count: number) => {
       const limit = limits.accounts;
-      return limit === Infinity || currentCount < limit;
+      return limit === Infinity || count < limit;
     },
-    canAddGoal: (currentCount: number) => {
+    canAddGoal: (count: number) => {
       const limit = limits.goals;
-      return limit === Infinity || currentCount < limit;
+      return limit === Infinity || count < limit;
     },
     limits,
   };
