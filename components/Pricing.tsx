@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://orcavi-api.vercel.app';
+
 const PricingPage: React.FC = () => {
   const { user } = useAuth();
   const { plan: currentPlan } = usePlan();
@@ -12,7 +14,36 @@ const PricingPage: React.FC = () => {
   const [couponStatus, setCouponStatus] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
   const [couponData, setCouponData] = useState<any>(null);
   const [applyingPlan, setApplyingPlan] = useState<PlanId | null>(null);
+  const [subscribingPlan, setSubscribingPlan] = useState<PlanId | null>(null);
   const [hoveredPlan, setHoveredPlan] = useState<PlanId | null>(null);
+
+  const handleSubscribe = async (planId: PlanId) => {
+    if (!user) return;
+    setSubscribingPlan(planId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`${API_URL}/api/subscriptions/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan: planId }),
+      });
+
+      if (!response.ok) throw new Error('Erro ao criar assinatura');
+
+      const { init_point } = await response.json() as { init_point: string };
+      window.location.href = init_point;
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao iniciar pagamento. Tente novamente.');
+    } finally {
+      setSubscribingPlan(null);
+    }
+  };
 
   const planConfig = {
     free:   { icon: <Sparkles size={18} />, gradient: 'none', isDark: false },
@@ -244,13 +275,21 @@ const PricingPage: React.FC = () => {
                     {applyingPlan !== planId && <ArrowRight size={13} />}
                   </button>
                 ) : planId !== 'free' ? (
-                  <button style={{
-                    width: '100%', padding: '11px', borderRadius: 12, border: 'none',
-                    background: isPro ? 'linear-gradient(135deg, #7C5CFC, #5B21B6)' : 'linear-gradient(135deg, #059669, #047857)',
-                    color: 'white', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  }} title="Em breve — Mercado Pago">
-                    Assinar {plan.name} <ArrowRight size={13} />
+                  <button
+                    onClick={() => handleSubscribe(planId)}
+                    disabled={subscribingPlan !== null}
+                    style={{
+                      width: '100%', padding: '11px', borderRadius: 12, border: 'none',
+                      background: isPro ? 'linear-gradient(135deg, #7C5CFC, #5B21B6)' : 'linear-gradient(135deg, #059669, #047857)',
+                      color: 'white', fontSize: 13, fontWeight: 700,
+                      cursor: subscribingPlan ? 'wait' : 'pointer',
+                      fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      opacity: subscribingPlan && subscribingPlan !== planId ? 0.5 : 1,
+                    }}
+                  >
+                    {subscribingPlan === planId ? 'Redirecionando...' : `Assinar ${plan.name}`}
+                    {subscribingPlan !== planId && <ArrowRight size={13} />}
                   </button>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '10px', borderRadius: 12, background: '#F9FAFB', color: '#9CA3AF', fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E7EB' }}>
