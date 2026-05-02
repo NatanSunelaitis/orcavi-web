@@ -47,8 +47,8 @@ const PricingPage: React.FC = () => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        console.error('API error:', errData);
-        throw new Error('Erro ao criar assinatura');
+        console.error('API error:', JSON.stringify(errData));
+        throw new Error(errData?.error ?? 'Erro ao criar assinatura');
       }
 
       const { init_point } = await response.json() as { init_point: string };
