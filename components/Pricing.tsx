@@ -15,43 +15,21 @@ const PricingPage: React.FC = () => {
   const [hoveredPlan, setHoveredPlan] = useState<PlanId | null>(null);
 
   const planConfig = {
-    free: {
-      icon: <Sparkles size={22} />,
-      gradient: 'none',
-      iconBg: '#F3F4F6',
-      iconColor: '#6B7280',
-    },
-    pro: {
-      icon: <Zap size={22} />,
-      gradient: 'linear-gradient(135deg, #7C5CFC 0%, #5B21B6 100%)',
-      iconBg: 'rgba(255,255,255,0.2)',
-      iconColor: 'white',
-    },
-    family: {
-      icon: <Users size={22} />,
-      gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-      iconBg: 'rgba(255,255,255,0.2)',
-      iconColor: 'white',
-    },
+    free:   { icon: <Sparkles size={18} />, gradient: 'none', isDark: false },
+    pro:    { icon: <Zap size={18} />, gradient: 'linear-gradient(135deg, #7C5CFC 0%, #5B21B6 100%)', isDark: true },
+    family: { icon: <Users size={18} />, gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)', isDark: true },
   };
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponStatus('loading');
     const { data, error } = await supabase
-      .from('promo_codes')
-      .select('*')
-      .eq('code', couponCode.trim().toUpperCase())
-      .eq('is_active', true)
-      .single();
-
+      .from('promo_codes').select('*')
+      .eq('code', couponCode.trim().toUpperCase()).eq('is_active', true).single();
     if (error || !data || (data.expires_at && new Date(data.expires_at) < new Date()) || (data.max_uses && data.uses_count >= data.max_uses)) {
-      setCouponStatus('invalid');
-      setCouponData(null);
-      return;
+      setCouponStatus('invalid'); setCouponData(null); return;
     }
-    setCouponStatus('valid');
-    setCouponData(data);
+    setCouponStatus('valid'); setCouponData(data);
   };
 
   const applyCoupon = async () => {
@@ -67,66 +45,56 @@ const PricingPage: React.FC = () => {
 
   const getDiscountedPrice = (planId: PlanId) => {
     const plan = PLANS[planId];
-    if (plan.price === 0) return null;
-    if (couponData?.type === 'discount' && couponData.discount_percent) {
-      return (plan.price * (1 - couponData.discount_percent / 100)).toFixed(2).replace('.', ',');
-    }
-    return null;
+    if (plan.price === 0 || !couponData?.discount_percent) return null;
+    return (plan.price * (1 - couponData.discount_percent / 100)).toFixed(2).replace('.', ',');
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', paddingBottom: 64 }}>
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: '#EDE9FE', borderRadius: 99, padding: '6px 14px', marginBottom: 16,
-        }}>
-          <Zap size={13} color="#7C5CFC" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#7C5CFC', letterSpacing: '0.05em' }}>
-            PLANOS E PREÇOS
-          </span>
+      {/* Header compacto */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <Zap size={13} color="#7C5CFC" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#7C5CFC', letterSpacing: '0.06em' }}>PLANOS E PREÇOS</span>
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0F0F1A', letterSpacing: '-0.025em', margin: 0 }}>
+            Simples, transparente, <span style={{ color: '#7C5CFC' }}>sem surpresas</span>
+          </h1>
+          <p style={{ fontSize: 13, color: '#6B6B9A', margin: '4px 0 0' }}>
+            Comece grátis. Faça upgrade quando precisar de mais controle.
+          </p>
         </div>
-        <h1 style={{ fontSize: 36, fontWeight: 900, color: '#0F0F1A', letterSpacing: '-0.025em', marginBottom: 12 }}>
-          Simples, transparente,<br />
-          <span style={{ color: '#7C5CFC' }}>sem surpresas</span>
-        </h1>
-        <p style={{ fontSize: 16, color: '#6B6B9A', maxWidth: 420, margin: '0 auto' }}>
-          Comece grátis. Faça upgrade quando o seu dinheiro pedir mais controle.
-        </p>
-      </div>
 
-      {/* Cupom */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
+        {/* Cupom inline no header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: 'white', borderRadius: 16, padding: '10px 10px 10px 16px',
+          background: 'white', borderRadius: 14, padding: '8px 8px 8px 14px',
           border: couponStatus === 'valid' ? '1.5px solid #059669' : couponStatus === 'invalid' ? '1.5px solid #DC4F3A' : '1.5px solid #E8E4FF',
-          boxShadow: '0 4px 20px rgba(124,92,252,0.08)',
-          maxWidth: 440, width: '100%', transition: 'border-color 0.2s',
+          boxShadow: '0 2px 12px rgba(124,92,252,0.08)',
+          minWidth: 280,
         }}>
-          <Tag size={15} color={couponStatus === 'valid' ? '#059669' : '#7C5CFC'} style={{ flexShrink: 0 }} />
+          <Tag size={13} color={couponStatus === 'valid' ? '#059669' : '#7C5CFC'} style={{ flexShrink: 0 }} />
           <input
-            type="text"
-            placeholder="Tem um cupom de desconto?"
-            value={couponCode}
+            type="text" placeholder="Tem um cupom?" value={couponCode}
             onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponStatus('idle'); }}
             onKeyDown={e => e.key === 'Enter' && validateCoupon()}
-            style={{
-              flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontSize: 14, color: '#1A1A2E', fontFamily: 'inherit',
-            }}
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: '#1A1A2E', fontFamily: 'inherit' }}
           />
+          {couponStatus === 'valid' && couponData && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap', marginRight: 4 }}>
+              {couponData.type === 'free_access' ? `${couponData.free_days}d grátis` : `-${couponData.discount_percent}%`}
+            </span>
+          )}
           <button
             onClick={couponStatus === 'valid' ? applyCoupon : validateCoupon}
             disabled={couponStatus === 'loading' || applyingPlan !== null}
             style={{
               background: couponStatus === 'valid' ? '#059669' : '#7C5CFC',
-              color: 'white', border: 'none', borderRadius: 10,
-              padding: '8px 16px', fontSize: 13, fontWeight: 700,
+              color: 'white', border: 'none', borderRadius: 9,
+              padding: '7px 14px', fontSize: 12, fontWeight: 700,
               cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-              transition: 'background 0.2s',
             }}
           >
             {couponStatus === 'loading' ? '...' : couponStatus === 'valid' ? 'Ativar' : 'Aplicar'}
@@ -134,22 +102,14 @@ const PricingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Feedback cupom */}
-      {couponStatus === 'valid' && couponData && (
-        <p style={{ textAlign: 'center', marginTop: -28, marginBottom: 28, fontSize: 13, color: '#059669', fontWeight: 600 }}>
-          Cupom ativo: {couponData.type === 'free_access'
-            ? `${couponData.free_days} dias grátis de ${PLANS[couponData.plan as PlanId]?.name}`
-            : `${couponData.discount_percent}% de desconto aplicado`}
-        </p>
-      )}
       {couponStatus === 'invalid' && (
-        <p style={{ textAlign: 'center', marginTop: -28, marginBottom: 28, fontSize: 13, color: '#DC4F3A', fontWeight: 600 }}>
+        <p style={{ fontSize: 12, color: '#DC4F3A', fontWeight: 600, marginBottom: 12, marginTop: -12 }}>
           Cupom inválido ou expirado
         </p>
       )}
 
       {/* Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         {(Object.keys(PLANS) as PlanId[]).map((planId) => {
           const plan = PLANS[planId];
           const config = planConfig[planId];
@@ -158,7 +118,6 @@ const PricingPage: React.FC = () => {
           const isHovered = hoveredPlan === planId;
           const discountedPrice = getDiscountedPrice(planId);
           const hasCouponForThis = couponStatus === 'valid' && couponData?.plan === planId && couponData.type === 'free_access';
-          const isDark = planId !== 'free';
 
           return (
             <div
@@ -166,171 +125,135 @@ const PricingPage: React.FC = () => {
               onMouseEnter={() => setHoveredPlan(planId)}
               onMouseLeave={() => setHoveredPlan(null)}
               style={{
-                borderRadius: 24,
-                overflow: 'hidden',
-                position: 'relative',
-                boxShadow: isHovered || isPro
-                  ? '0 20px 60px rgba(124,92,252,0.18)'
-                  : '0 4px 20px rgba(0,0,0,0.06)',
-                transform: isPro ? 'scale(1.03)' : isHovered ? 'scale(1.01)' : 'scale(1)',
-                transition: 'all 0.25s ease',
+                borderRadius: 20, overflow: 'hidden', position: 'relative',
+                boxShadow: isPro || isHovered ? '0 16px 48px rgba(124,92,252,0.15)' : '0 2px 16px rgba(0,0,0,0.06)',
+                transform: isPro ? 'scale(1.02)' : isHovered ? 'translateY(-3px)' : 'none',
+                transition: 'all 0.2s ease',
                 border: isPro ? '2px solid #7C5CFC' : '1px solid #E8E4FF',
               }}
             >
-              {/* Card header com gradient */}
+              {/* Header colorido */}
               <div style={{
-                background: config.gradient,
-                padding: isPro ? '28px 28px 24px' : '24px 28px 20px',
-                position: 'relative',
-                overflow: 'hidden',
+                background: config.gradient === 'none' ? '#F9FAFB' : config.gradient,
+                padding: '20px 22px 16px', position: 'relative',
               }}>
                 {isPro && (
                   <div style={{
-                    position: 'absolute', top: 16, right: 16,
-                    background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)',
-                    borderRadius: 99, padding: '4px 10px',
-                    fontSize: 10, fontWeight: 800, color: 'white', letterSpacing: '0.08em',
+                    position: 'absolute', top: 14, right: 14,
+                    background: 'rgba(255,255,255,0.2)', borderRadius: 99,
+                    padding: '3px 9px', fontSize: 9, fontWeight: 800,
+                    color: 'white', letterSpacing: '0.08em',
                   }}>
                     MAIS POPULAR
                   </div>
                 )}
 
-                <div style={{
-                  width: 44, height: 44, borderRadius: 14,
-                  background: config.iconBg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isDark ? 'white' : '#6B7280',
-                  marginBottom: 16,
-                  border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid #E5E7EB',
-                }}>
-                  {config.icon}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: config.isDark ? 'rgba(255,255,255,0.2)' : '#EDEDF0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: config.isDark ? 'white' : '#6B7280',
+                    border: config.isDark ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                  }}>
+                    {config.icon}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: config.isDark ? 'white' : '#0F0F1A', margin: 0, letterSpacing: '-0.02em' }}>
+                      {plan.name}
+                    </h3>
+                    <p style={{ fontSize: 11, color: config.isDark ? 'rgba(255,255,255,0.65)' : '#9CA3AF', margin: 0 }}>
+                      {plan.description}
+                    </p>
+                  </div>
                 </div>
 
-                <h3 style={{
-                  fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em',
-                  color: isDark ? 'white' : '#0F0F1A', marginBottom: 4,
-                }}>
-                  {plan.name}
-                </h3>
-                <p style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.7)' : '#6B6B9A' }}>
-                  {plan.description}
-                </p>
-
                 {/* Preço */}
-                <div style={{ marginTop: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                   {plan.price === 0 ? (
-                    <div style={{ fontSize: 38, fontWeight: 900, color: '#0F0F1A', letterSpacing: '-0.03em' }}>
-                      Grátis
-                    </div>
+                    <span style={{ fontSize: 30, fontWeight: 900, color: '#0F0F1A', letterSpacing: '-0.03em', lineHeight: 1 }}>Grátis</span>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+                    <>
                       <div>
-                        {discountedPrice ? (
-                          <>
-                            <div style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF', textDecoration: 'line-through' }}>
-                              {plan.priceLabel}
-                            </div>
-                            <div style={{ fontSize: 38, fontWeight: 900, color: isDark ? 'white' : '#0F0F1A', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                              R${discountedPrice}
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ fontSize: 38, fontWeight: 900, color: isDark ? 'white' : '#0F0F1A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                        {discountedPrice && (
+                          <div style={{ fontSize: 11, color: config.isDark ? 'rgba(255,255,255,0.45)' : '#9CA3AF', textDecoration: 'line-through', lineHeight: 1, marginBottom: 2 }}>
                             {plan.priceLabel}
                           </div>
                         )}
+                        <span style={{ fontSize: 30, fontWeight: 900, color: config.isDark ? 'white' : '#0F0F1A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                          {discountedPrice ? `R$${discountedPrice}` : plan.priceLabel}
+                        </span>
                       </div>
-                      <div style={{ fontSize: 14, color: isDark ? 'rgba(255,255,255,0.6)' : '#9CA3AF', paddingBottom: 6 }}>
-                        /mês
-                      </div>
-                    </div>
-                  )}
-                  {'trialDays' in plan && (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8,
-                      background: isDark ? 'rgba(255,255,255,0.15)' : '#EDE9FE',
-                      borderRadius: 99, padding: '3px 10px',
-                    }}>
-                      <Clock size={11} color={isDark ? 'white' : '#7C5CFC'} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? 'white' : '#7C5CFC' }}>
-                        {plan.trialDays} dias grátis
-                      </span>
-                    </div>
+                      <span style={{ fontSize: 12, color: config.isDark ? 'rgba(255,255,255,0.55)' : '#9CA3AF', paddingBottom: 4 }}>/mês</span>
+                    </>
                   )}
                 </div>
+
+                {'trialDays' in plan && (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8,
+                    background: config.isDark ? 'rgba(255,255,255,0.15)' : '#EDE9FE',
+                    borderRadius: 99, padding: '3px 9px',
+                  }}>
+                    <Clock size={10} color={config.isDark ? 'white' : '#7C5CFC'} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: config.isDark ? 'white' : '#7C5CFC' }}>
+                      {plan.trialDays} dias grátis
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Card body */}
-              <div style={{ background: 'white', padding: '20px 28px 24px' }}>
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              {/* Body */}
+              <div style={{ background: 'white', padding: '16px 22px 20px' }}>
+                <ul style={{ listStyle: 'none', margin: '0 0 16px', padding: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {plan.features.map((feature) => (
-                    <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{
-                        width: 20, height: 20, borderRadius: 99, flexShrink: 0,
-                        background: planId === 'free' ? '#F3F4F6' : planId === 'pro' ? '#EDE9FE' : '#D1FAE5',
+                        width: 17, height: 17, borderRadius: 99, flexShrink: 0,
+                        background: planId === 'pro' ? '#EDE9FE' : planId === 'family' ? '#D1FAE5' : '#F3F4F6',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        <Check size={11} color={planId === 'free' ? '#6B7280' : planId === 'pro' ? '#7C5CFC' : '#059669'} strokeWidth={3} />
+                        <Check size={9} color={planId === 'pro' ? '#7C5CFC' : planId === 'family' ? '#059669' : '#6B7280'} strokeWidth={3} />
                       </div>
-                      <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{feature}</span>
+                      <span style={{ fontSize: 12, color: '#374151', fontWeight: 500 }}>{feature}</span>
                     </li>
                   ))}
                   {plan.locked.map((feature) => (
-                    <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.35 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 99, flexShrink: 0, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ width: 8, height: 1.5, background: '#9CA3AF', borderRadius: 99 }} />
+                    <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.3 }}>
+                      <div style={{ width: 17, height: 17, borderRadius: 99, flexShrink: 0, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 6, height: 1.5, background: '#9CA3AF', borderRadius: 99 }} />
                       </div>
-                      <span style={{ fontSize: 13, color: '#9CA3AF' }}>{feature}</span>
+                      <span style={{ fontSize: 12, color: '#9CA3AF' }}>{feature}</span>
                     </li>
                   ))}
                 </ul>
 
                 {/* Botão */}
                 {isCurrent ? (
-                  <div style={{
-                    textAlign: 'center', padding: '12px', borderRadius: 14,
-                    background: '#F9FAFB', color: '#9CA3AF',
-                    fontSize: 14, fontWeight: 600, border: '1.5px solid #E5E7EB',
-                  }}>
+                  <div style={{ textAlign: 'center', padding: '10px', borderRadius: 12, background: '#F9FAFB', color: '#9CA3AF', fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E7EB' }}>
                     Plano atual
                   </div>
                 ) : hasCouponForThis ? (
-                  <button
-                    onClick={applyCoupon}
-                    disabled={applyingPlan !== null}
-                    style={{
-                      width: '100%', padding: '13px', borderRadius: 14, border: 'none',
-                      background: 'linear-gradient(135deg, #059669, #047857)',
-                      color: 'white', fontSize: 14, fontWeight: 700,
-                      cursor: 'pointer', fontFamily: 'inherit',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
-                  >
+                  <button onClick={applyCoupon} disabled={applyingPlan !== null} style={{
+                    width: '100%', padding: '11px', borderRadius: 12, border: 'none',
+                    background: 'linear-gradient(135deg, #059669, #047857)',
+                    color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  }}>
                     {applyingPlan === planId ? 'Ativando...' : `Ativar ${plan.name} grátis`}
-                    {applyingPlan !== planId && <ArrowRight size={15} />}
+                    {applyingPlan !== planId && <ArrowRight size={13} />}
                   </button>
                 ) : planId !== 'free' ? (
-                  <button
-                    style={{
-                      width: '100%', padding: '13px', borderRadius: 14, border: 'none',
-                      background: isPro
-                        ? 'linear-gradient(135deg, #7C5CFC, #5B21B6)'
-                        : 'linear-gradient(135deg, #059669, #047857)',
-                      color: 'white', fontSize: 14, fontWeight: 700,
-                      cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.55,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
-                    title="Em breve — integração com Mercado Pago"
-                  >
-                    Assinar {plan.name}
-                    <ArrowRight size={15} />
+                  <button style={{
+                    width: '100%', padding: '11px', borderRadius: 12, border: 'none',
+                    background: isPro ? 'linear-gradient(135deg, #7C5CFC, #5B21B6)' : 'linear-gradient(135deg, #059669, #047857)',
+                    color: 'white', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  }} title="Em breve — Mercado Pago">
+                    Assinar {plan.name} <ArrowRight size={13} />
                   </button>
                 ) : (
-                  <div style={{
-                    textAlign: 'center', padding: '12px', borderRadius: 14,
-                    background: '#F9FAFB', color: '#9CA3AF',
-                    fontSize: 14, fontWeight: 600, border: '1.5px solid #E5E7EB',
-                  }}>
+                  <div style={{ textAlign: 'center', padding: '10px', borderRadius: 12, background: '#F9FAFB', color: '#9CA3AF', fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E7EB' }}>
                     Fazer downgrade
                   </div>
                 )}
@@ -341,15 +264,14 @@ const PricingPage: React.FC = () => {
       </div>
 
       {/* Rodapé */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginTop: 40, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
         {[
-          { icon: <Shield size={14} />, text: 'Pagamento seguro' },
-          { icon: <Clock size={14} />, text: 'Cancele quando quiser' },
-          { icon: <Check size={14} />, text: 'Sem fidelidade ou multa' },
+          { icon: <Shield size={12} />, text: 'Pagamento seguro' },
+          { icon: <Clock size={12} />, text: 'Cancele quando quiser' },
+          { icon: <Check size={12} />, text: 'Sem fidelidade ou multa' },
         ].map(({ icon, text }) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9CA3AF', fontSize: 13 }}>
-            {icon}
-            <span>{text}</span>
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9CA3AF', fontSize: 12 }}>
+            {icon}<span>{text}</span>
           </div>
         ))}
       </div>
