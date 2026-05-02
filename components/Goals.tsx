@@ -165,7 +165,8 @@ const Goals: React.FC = () => {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          className="text-white px-5 py-3 rounded-xl flex items-center gap-2 transition-all"
+        style={{ backgroundColor: '#7C5CFC', boxShadow: '0 4px 12px rgba(124,92,252,0.3)' }}
         >
           <Plus className="w-5 h-5" />
           Nova Meta
@@ -180,7 +181,7 @@ const Goals: React.FC = () => {
           const accountName = getAccountName(goal.accountId);
 
           return (
-            <div key={goal.id} className="group relative bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-[450px]">
+            <div key={goal.id} className="group relative bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-[450px]" style={{ border: '1px solid #E8E4FF', boxShadow: '0 1px 3px rgba(124,92,252,0.06)' }}>
               {/* Image Area */}
               <div className="h-48 relative overflow-hidden bg-slate-100">
                 {hasImage ? (
@@ -242,10 +243,10 @@ const Goals: React.FC = () => {
                     <span className="text-sm font-medium text-slate-500">Progresso</span>
                     <span className="text-sm font-bold text-slate-900">{progress.toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden">
+                  <div className="w-full rounded-full h-3 mb-4 overflow-hidden" style={{ backgroundColor: '#F5F3FF' }}>
                     <div
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${progress}%` }}
+                      className="h-3 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${progress}%`, backgroundColor: progress >= 100 ? '#059669' : '#7C5CFC' }}
                     ></div>
                   </div>
 
@@ -288,7 +289,10 @@ const Goals: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => openContributeModal(goal)}
-                      className="w-full py-2.5 rounded-lg border-2 border-purple-600 text-purple-600 font-semibold hover:bg-purple-600 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
+                      className="w-full py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                      style={{ border: '2px solid #7C5CFC', color: '#7C5CFC', backgroundColor: 'transparent' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#7C5CFC'; (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#7C5CFC'; }}
                     >
                       <DollarSign className="w-4 h-4" />
                       Adicionar Contribuição
@@ -303,7 +307,10 @@ const Goals: React.FC = () => {
         {/* Create New Card */}
         <button
           onClick={() => setShowAddModal(true)}
-          className="group relative h-[450px] border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-500 hover:text-purple-500 hover:bg-purple-50/30 transition-all cursor-pointer"
+          className="group relative h-[450px] rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer"
+        style={{ border: '2px dashed #C4B5FD', color: '#9090B0' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#7C5CFC'; (e.currentTarget as HTMLElement).style.color = '#7C5CFC'; (e.currentTarget as HTMLElement).style.backgroundColor = '#F5F3FF'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C4B5FD'; (e.currentTarget as HTMLElement).style.color = '#9090B0'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
         >
           <div className="bg-slate-100 p-4 rounded-full mb-4 group-hover:bg-purple-100 transition-colors">
             <Target className="w-8 h-8" />
@@ -352,7 +359,7 @@ const Goals: React.FC = () => {
                 <input
                   type="text"
                   required
-                  className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow"
+                  className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Viagem para Paris"
@@ -367,7 +374,7 @@ const Goals: React.FC = () => {
                     required
                     step="0.01"
                     min="0"
-                    className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow"
+                    className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                     value={formData.targetAmount}
                     onChange={e => setFormData({ ...formData, targetAmount: e.target.value })}
                   />
@@ -378,7 +385,7 @@ const Goals: React.FC = () => {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow"
+                    className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                     value={formData.currentAmount}
                     onChange={e => setFormData({ ...formData, currentAmount: e.target.value })}
                     disabled={showEditModal}
@@ -392,7 +399,7 @@ const Goals: React.FC = () => {
                 <input
                   type="date"
                   required
-                  className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow"
+                  className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                   value={formData.deadline}
                   onChange={e => setFormData({ ...formData, deadline: e.target.value })}
                 />
@@ -404,7 +411,7 @@ const Goals: React.FC = () => {
                   <ImageIcon className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow text-sm"
+                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow text-sm"
                     value={formData.imageUrl}
                     onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
                     placeholder="https://..."
@@ -421,7 +428,7 @@ const Goals: React.FC = () => {
                   <Landmark className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                   <select
                     required
-                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow appearance-none bg-white"
+                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow appearance-none bg-white"
                     value={formData.accountId}
                     onChange={e => setFormData({ ...formData, accountId: e.target.value })}
                   >
@@ -442,7 +449,7 @@ const Goals: React.FC = () => {
                   <CreditCard className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow"
+                    className="w-full border border-slate-300 rounded-lg p-3 pl-9 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                     value={formData.pixKey}
                     onChange={e => setFormData({ ...formData, pixKey: e.target.value })}
                     placeholder="email@exemplo.com, CPF, telefone..."
@@ -454,7 +461,8 @@ const Goals: React.FC = () => {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full bg-purple-600 text-white font-bold py-3.5 rounded-xl hover:bg-purple-700 transition-colors shadow-lg flex items-center justify-center gap-2"
+                  className="w-full text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#7C5CFC', boxShadow: '0 4px 12px rgba(124,92,252,0.3)' }}
                 >
                   {showEditModal ? (
                     <>
@@ -534,7 +542,7 @@ const Goals: React.FC = () => {
                   <Landmark className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                   <select
                     required
-                    className="w-full border border-slate-300 rounded-lg p-2.5 pl-9 focus:ring-2 focus:ring-purple-500 outline-none transition-shadow appearance-none bg-white"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 pl-9 outline-none focus:ring-2 focus:ring-violet-500 transition-shadow appearance-none bg-white"
                     value={contributeAccountId}
                     onChange={e => setContributeAccountId(e.target.value)}
                   >
@@ -584,7 +592,8 @@ const Goals: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#7C5CFC' }}
                 >
                   <DollarSign className="w-5 h-5" />
                   Adicionar

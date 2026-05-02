@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
 import Layout from './components/Layout';
@@ -8,6 +8,10 @@ import Transactions from './components/Transactions';
 import Accounts from './components/Accounts';
 import Simulator from './components/Simulator';
 import Goals from './components/Goals';
+import CreditCards from './components/CreditCards';
+import Debts from './components/Debts';
+import Family from './components/Family';
+import WhatsAppAI from './components/WhatsAppAI';
 import Login from './components/Login';
 
 const AuthenticatedApp: React.FC = () => {
@@ -38,6 +42,10 @@ const AuthenticatedApp: React.FC = () => {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/simulator" element={<Simulator />} />
             <Route path="/goals" element={<Goals />} />
+            <Route path="/cards" element={<CreditCards />} />
+            <Route path="/debts" element={<Debts />} />
+            <Route path="/family" element={<Family />} />
+            <Route path="/whatsapp-ai" element={<WhatsAppAI />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

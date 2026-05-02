@@ -85,13 +85,13 @@ const Simulator: React.FC = () => {
           <p className="text-slate-500">Planeje antes de comprar e evite dívidas</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <div className="bg-white p-6 rounded-xl" style={{ border: '1px solid #E8E4FF', boxShadow: '0 1px 3px rgba(124,92,252,0.06)' }}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">O que deseja comprar?</label>
               <input 
                 type="text" 
-                className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500"
                 placeholder="Ex: Notebook novo"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -104,7 +104,7 @@ const Simulator: React.FC = () => {
                 <span className="absolute left-3 top-3 text-slate-500">R$</span>
                 <input 
                     type="number" 
-                    className="w-full border border-slate-300 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-3 pl-10 outline-none focus:ring-2 focus:ring-violet-500"
                     placeholder="0,00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
@@ -115,15 +115,17 @@ const Simulator: React.FC = () => {
             <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Forma de Pagamento</label>
                 <div className="grid grid-cols-2 gap-4">
-                    <button 
+                    <button
                         onClick={() => setPaymentType('CASH')}
-                        className={`p-3 rounded-lg border text-sm font-medium transition-all ${paymentType === 'CASH' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                        className="p-3 rounded-lg text-sm font-medium transition-all"
+                        style={{ border: paymentType === 'CASH' ? '2px solid #7C5CFC' : '1px solid #E8E4FF', backgroundColor: paymentType === 'CASH' ? '#EDE9FE' : 'white', color: paymentType === 'CASH' ? '#7C5CFC' : '#4B4B6B' }}
                     >
                         À Vista
                     </button>
-                    <button 
+                    <button
                         onClick={() => setPaymentType('CREDIT')}
-                        className={`p-3 rounded-lg border text-sm font-medium transition-all ${paymentType === 'CREDIT' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                        className="p-3 rounded-lg text-sm font-medium transition-all"
+                        style={{ border: paymentType === 'CREDIT' ? '2px solid #7C5CFC' : '1px solid #E8E4FF', backgroundColor: paymentType === 'CREDIT' ? '#EDE9FE' : 'white', color: paymentType === 'CREDIT' ? '#7C5CFC' : '#4B4B6B' }}
                     >
                         Parcelado
                     </button>
@@ -134,7 +136,7 @@ const Simulator: React.FC = () => {
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Número de Parcelas</label>
                     <select 
-                        className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-violet-500"
                         value={installments}
                         onChange={(e) => setInstallments(Number(e.target.value))}
                     >
@@ -147,7 +149,8 @@ const Simulator: React.FC = () => {
 
             <button 
                 onClick={handleSimulate}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4 transition-colors flex items-center justify-center gap-2"
+                className="w-full text-white font-bold py-3 rounded-lg mt-4 transition-colors flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#7C5CFC', boxShadow: '0 4px 12px rgba(124,92,252,0.3)' }}
             >
                 <Calculator className="w-5 h-5" />
                 Simular Impacto
@@ -157,13 +160,13 @@ const Simulator: React.FC = () => {
         
         {/* Context Stats */}
         <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-100 p-4 rounded-xl">
-                <p className="text-xs text-slate-500 uppercase font-bold">Renda Mensal</p>
-                <p className="text-lg font-bold text-slate-900">R$ {monthlyIncome.toLocaleString('pt-BR')}</p>
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#EDE9FE' }}>
+                <p className="text-xs font-bold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Renda Mensal</p>
+                <p className="text-lg font-bold" style={{ color: '#0D0D1A' }}>R$ {monthlyIncome.toLocaleString('pt-BR')}</p>
             </div>
-            <div className="bg-slate-100 p-4 rounded-xl">
-                <p className="text-xs text-slate-500 uppercase font-bold">Saldo Disponível</p>
-                <p className="text-lg font-bold text-slate-900">R$ {totalLiquidity.toLocaleString('pt-BR')}</p>
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#EDE9FE' }}>
+                <p className="text-xs font-bold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Saldo Disponível</p>
+                <p className="text-lg font-bold" style={{ color: '#0D0D1A' }}>R$ {totalLiquidity.toLocaleString('pt-BR')}</p>
             </div>
         </div>
       </div>
@@ -171,7 +174,7 @@ const Simulator: React.FC = () => {
       {/* Results Section */}
       <div className="flex flex-col h-full">
          {!result ? (
-             <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center h-full min-h-[400px] text-slate-400 p-8 text-center">
+             <div className="rounded-xl flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center" style={{ backgroundColor: '#F5F3FF', border: '2px dashed #C4B5FD', color: '#9090B0' }}>
                  <Calculator className="w-16 h-16 mb-4 opacity-50" />
                  <h3 className="text-lg font-medium text-slate-600">Aguardando Simulação</h3>
                  <p>Preencha os dados ao lado para ver como esta compra afetará suas finanças.</p>
@@ -247,9 +250,9 @@ const Simulator: React.FC = () => {
                          </div>
                      </div>
 
-                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                         <h4 className="font-bold text-blue-800 text-sm mb-2">Nossa Sugestão</h4>
-                         <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                     <div className="p-4 rounded-lg" style={{ backgroundColor: '#EDE9FE', border: '1px solid #C4B5FD' }}>
+                         <h4 className="font-bold text-sm mb-2" style={{ color: '#4C1D95' }}>Nossa Sugestão</h4>
+                         <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: '#6D28D9' }}>
                              {result.recommendation === 'NOT_RECOMMENDED' && <li>Tente aumentar o número de parcelas para reduzir o impacto mensal.</li>}
                              {paymentType === 'CREDIT' && <li>Verifique se você tem limite disponível no cartão.</li>}
                              <li>Se possível, junte o valor para pagar à vista e peça desconto.</li>

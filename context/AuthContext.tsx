@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  User,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
+import { supabase } from '../lib/supabase';
+
+// Tipo normalizado — mesma interface que os componentes já usam
+export interface NormalizedUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: NormalizedUser | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -16,35 +18,48 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeUser(supabaseUser: any): NormalizedUser {
+  return {
+    uid: supabaseUser.id,
+    email: supabaseUser.email ?? null,
+    displayName: supabaseUser.user_metadata?.full_name ?? supabaseUser.email ?? null,
+    photoURL: supabaseUser.user_metadata?.avatar_url ?? null,
+  };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<NormalizedUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // Sessão atual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ? normalizeUser(session.user) : null);
       setLoading(false);
     });
 
-    return unsubscribe;
+    // Escuta mudanças de auth (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ? normalizeUser(session.user) : null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      throw error;
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
   };
 
   const signOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      throw error;
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
   return (

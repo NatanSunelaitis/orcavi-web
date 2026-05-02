@@ -216,7 +216,8 @@ const Transactions: React.FC = () => {
             resetForm();
             setIsModalOpen(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          style={{ backgroundColor: '#7C5CFC', boxShadow: '0 4px 12px rgba(124,92,252,0.3)' }}
         >
           <Plus className="w-5 h-5" />
           Nova Transação
@@ -225,7 +226,7 @@ const Transactions: React.FC = () => {
 
       {/* Aviso se não houver contas */}
       {accounts.length === 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+        <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B44' }}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-amber-100 rounded-lg">
               <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -245,46 +246,52 @@ const Transactions: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6">
-        <div className="flex items-center gap-2 text-slate-500 mb-3">
+      <div className="bg-white p-4 rounded-xl mb-6" style={{ border: '1px solid #E8E4FF', boxShadow: '0 1px 3px rgba(124,92,252,0.06)' }}>
+        <div className="flex items-center gap-2 mb-3" style={{ color: '#9090B0' }}>
           <Filter className="w-4 h-4" />
           <span className="text-sm font-medium">Filtrar por:</span>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilterType('ALL')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterType === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterType === 'ALL' ? '#7C5CFC' : '#F5F3FF', color: filterType === 'ALL' ? 'white' : '#4B4B6B', border: filterType === 'ALL' ? 'none' : '1px solid #E8E4FF' }}
           >
             Todas
           </button>
           <button
             onClick={() => setFilterType(TransactionType.INCOME)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterType === TransactionType.INCOME ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterType === TransactionType.INCOME ? '#059669' : '#ECFDF5', color: filterType === TransactionType.INCOME ? 'white' : '#059669', border: 'none' }}
           >
             Receitas
           </button>
           <button
             onClick={() => setFilterType(TransactionType.EXPENSE)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterType === TransactionType.EXPENSE ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterType === TransactionType.EXPENSE ? '#DC4F3A' : '#FFF5F3', color: filterType === TransactionType.EXPENSE ? 'white' : '#DC4F3A', border: 'none' }}
           >
             Despesas
           </button>
-          <div className="border-l border-slate-200 mx-2"></div>
+          <div className="mx-2" style={{ borderLeft: '1px solid #E8E4FF' }}></div>
           <button
             onClick={() => setFilterPaid('ALL')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterPaid === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterPaid === 'ALL' ? '#7C5CFC' : '#F5F3FF', color: filterPaid === 'ALL' ? 'white' : '#4B4B6B', border: filterPaid === 'ALL' ? 'none' : '1px solid #E8E4FF' }}
           >
             Todas
           </button>
           <button
             onClick={() => setFilterPaid('PAID')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterPaid === 'PAID' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterPaid === 'PAID' ? '#059669' : '#ECFDF5', color: filterPaid === 'PAID' ? 'white' : '#059669', border: 'none' }}
           >
             Pagas
           </button>
           <button
             onClick={() => setFilterPaid('PENDING')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filterPaid === 'PENDING' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{ backgroundColor: filterPaid === 'PENDING' ? '#F59E0B' : '#FEF3C7', color: filterPaid === 'PENDING' ? 'white' : '#92400E', border: 'none' }}
           >
             Pendentes
           </button>
@@ -292,16 +299,16 @@ const Transactions: React.FC = () => {
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #E8E4FF', boxShadow: '0 1px 3px rgba(124,92,252,0.06)' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead style={{ backgroundColor: '#F5F3FF', borderBottom: '1px solid #E8E4FF' }}>
               <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Data</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Descrição</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Categoria</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Conta</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Status</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Data</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Descrição</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Categoria</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#9090B0', letterSpacing: '0.05em' }}>Conta</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Valor</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">Ações</th>
               </tr>
@@ -310,7 +317,7 @@ const Transactions: React.FC = () => {
               {filteredTransactions.map((t) => {
                 const account = accounts.find(a => a.id === t.accountId);
                 return (
-                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={t.id} className="transition-colors" style={{ borderBottom: '1px solid #F5F3FF' }} onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#F5F3FF'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'}>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleTogglePaid(t.id, t.isPaid)}
@@ -364,7 +371,7 @@ const Transactions: React.FC = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleEdit(t)}
-                          className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                          className="p-1.5 rounded-lg transition-colors" style={{ color: '#7C5CFC' }} onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#EDE9FE'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'}
                           title="Editar"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -423,7 +430,7 @@ const Transactions: React.FC = () => {
                 <input
                   type="text"
                   required
-                  className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                   value={newTrans.description}
                   onChange={e => setNewTrans({...newTrans, description: e.target.value})}
                   placeholder="Ex: Supermercado..."
@@ -437,7 +444,7 @@ const Transactions: React.FC = () => {
                     type="number"
                     required
                     step="0.01"
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newTrans.amount}
                     onChange={e => setNewTrans({...newTrans, amount: e.target.value})}
                   />
@@ -447,7 +454,7 @@ const Transactions: React.FC = () => {
                   <input
                     type="date"
                     required
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newTrans.date}
                     onChange={e => setNewTrans({...newTrans, date: e.target.value})}
                   />
@@ -459,7 +466,7 @@ const Transactions: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
                   <select
                     required
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newTrans.category}
                     onChange={e => setNewTrans({...newTrans, category: e.target.value})}
                   >
@@ -473,7 +480,7 @@ const Transactions: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Conta</label>
                   <select
                     required
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newTrans.accountId}
                     onChange={e => setNewTrans({...newTrans, accountId: e.target.value})}
                   >
@@ -603,7 +610,7 @@ const Transactions: React.FC = () => {
                     <div className="ml-6">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Número de Parcelas</label>
                       <select
-                        className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                         value={newTrans.installmentsTotal}
                         onChange={e => setNewTrans({...newTrans, installmentsTotal: Number(e.target.value)})}
                       >
@@ -630,7 +637,8 @@ const Transactions: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+                  className="px-4 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#7C5CFC' }}
                 >
                   {editingTransaction ? 'Atualizar' : 'Salvar'}
                 </button>

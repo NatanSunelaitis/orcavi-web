@@ -3,18 +3,38 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FinanceControl Pro</title>
+    <title>Orçavi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            },
             colors: {
-              primary: '#2563EB',
-              secondary: '#6B7280',
-              success: '#10B981',
-              warning: '#F59E0B',
-              danger: '#EF4444',
+              primary:          '#7C5CFC',
+              'primary-dark':   '#6D28D9',
+              'primary-light':  '#EDE9FE',
+              'primary-subtle': '#F5F3FF',
+              sidebar:          '#1A1A2E',
+              'sidebar-hover':  '#25253F',
+              income:           '#059669',
+              'income-light':   '#D1FAE5',
+              expense:          '#DC4F3A',
+              'expense-light':  '#FFE4DF',
+              'violet-50':      '#F5F3FF',
+              'violet-100':     '#EDE9FE',
+              'violet-200':     '#DDD6FE',
+              'violet-300':     '#C4B5FD',
+              'violet-400':     '#A78BFA',
+              'violet-500':     '#7C5CFC',
+              'violet-700':     '#6D28D9',
+              warning:          '#F59E0B',
+              danger:           '#DC4F3A',
             }
           }
         }
@@ -38,7 +58,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-50 text-slate-900 font-sans antialiased">
+  <body class="bg-violet-50 text-slate-900 font-sans antialiased">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

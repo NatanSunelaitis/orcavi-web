@@ -63,7 +63,8 @@ const Accounts: React.FC = () => {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          style={{ backgroundColor: '#7C5CFC', boxShadow: '0 4px 12px rgba(124,92,252,0.3)' }}
         >
           <Plus className="w-5 h-5" />
           Nova Conta
@@ -77,7 +78,7 @@ const Accounts: React.FC = () => {
           const availableAmount = acc.balance - reservedAmount;
 
           return (
-            <div key={acc.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+            <div key={acc.id} className="bg-white p-6 rounded-xl hover:shadow-md transition-shadow relative overflow-hidden" style={{ border: '1px solid #E8E4FF', boxShadow: '0 1px 3px rgba(124,92,252,0.06)' }}>
                <div className={`absolute top-0 left-0 w-1.5 h-full ${acc.color}`}></div>
                <div className="flex justify-between items-start mb-4">
                  <div className={`p-3 rounded-lg bg-slate-50`}>
@@ -116,7 +117,7 @@ const Accounts: React.FC = () => {
                 <input 
                   type="text" 
                   required
-                  className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                   value={newAccount.name}
                   onChange={e => setNewAccount({...newAccount, name: e.target.value})}
                   placeholder="Ex: Nubank, Carteira..."
@@ -126,7 +127,7 @@ const Accounts: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
                   <select 
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newAccount.type}
                     onChange={e => setNewAccount({...newAccount, type: e.target.value as AccountType})}
                   >
@@ -141,7 +142,7 @@ const Accounts: React.FC = () => {
                     type="number" 
                     required
                     step="0.01"
-                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-violet-500"
                     value={newAccount.balance}
                     onChange={e => setNewAccount({...newAccount, balance: Number(e.target.value)})}
                   />
@@ -155,9 +156,10 @@ const Accounts: React.FC = () => {
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
-                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#7C5CFC' }}
                 >
                   Salvar Conta
                 </button>

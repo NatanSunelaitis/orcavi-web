@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Account, Transaction, Goal } from '../types';
-import { firestoreService } from '../services/firestore';
+import { supabaseService as firestoreService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
 
 interface FinanceContextType {
