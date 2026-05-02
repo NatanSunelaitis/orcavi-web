@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
+import { PlanProvider } from './context/PlanContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
@@ -34,6 +35,7 @@ const AuthenticatedApp: React.FC = () => {
   }
 
   return (
+    <PlanProvider>
     <FinanceProvider>
       <Router>
         <Layout>
@@ -53,6 +55,7 @@ const AuthenticatedApp: React.FC = () => {
         </Layout>
       </Router>
     </FinanceProvider>
+    </PlanProvider>
   );
 };
 

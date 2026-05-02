@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Receipt, Wallet, Calculator, Target, CreditCard, TrendingDown, Users, MessageCircle, Zap, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan } from '../context/PlanContext';
 
 interface LayoutProps {
   children: React.ReactNode;

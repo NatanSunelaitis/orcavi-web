@@ -3,7 +3,7 @@ import { Check, Zap, Users, Star, Tag } from 'lucide-react';
 import { PLANS, PlanId } from '../config/plans';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan } from '../context/PlanContext';
 
 const PricingPage: React.FC = () => {
   const { user } = useAuth();
