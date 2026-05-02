@@ -21,8 +21,20 @@ const PricingPage: React.FC = () => {
     if (!user) return;
     setSubscribingPlan(planId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Tenta getSession primeiro, depois refreshSession se necessário
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const refreshed = await supabase.auth.refreshSession();
+        session = refreshed.data.session;
+      }
+
       const token = session?.access_token;
+      console.log('Token preview:', token?.substring(0, 30));
+
+      if (!token) {
+        alert('Sessão expirada. Faça login novamente.');
+        return;
+      }
 
       const response = await fetch(`${API_URL}/api/subscriptions/create`, {
         method: 'POST',
@@ -33,7 +45,11 @@ const PricingPage: React.FC = () => {
         body: JSON.stringify({ plan: planId }),
       });
 
-      if (!response.ok) throw new Error('Erro ao criar assinatura');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error('API error:', errData);
+        throw new Error('Erro ao criar assinatura');
+      }
 
       const { init_point } = await response.json() as { init_point: string };
       window.location.href = init_point;
