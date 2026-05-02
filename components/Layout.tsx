@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Wallet, Calculator, Target, CreditCard, TrendingDown, Users, MessageCircle, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Wallet, Calculator, Target, CreditCard, TrendingDown, Users, MessageCircle, Zap, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePlan } from '../hooks/usePlan';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { plan, isFree } = usePlan();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const handleLogout = async () => {
@@ -120,6 +122,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             );
           })}
         </nav>
+
+        {/* Upgrade banner para free */}
+        {isFree && (
+          <Link
+            to="/pricing"
+            className="mx-3 mb-2 flex items-center gap-2 px-3 py-2.5 rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #7C5CFC22, #A78BFA22)', border: '1px solid #7C5CFC44', textDecoration: 'none' }}
+          >
+            <Zap style={{ width: 14, height: 14, color: '#A78BFA', flexShrink: 0 }} />
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#C4B5FD' }}>Faça upgrade para Pro</p>
+              <p style={{ fontSize: 10, color: '#6B6B9A' }}>14 dias grátis</p>
+            </div>
+          </Link>
+        )}
 
         {/* Footer */}
         <div className="p-3" style={{ borderTop: '1px solid #25253F' }}>
