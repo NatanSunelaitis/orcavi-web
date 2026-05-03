@@ -45,23 +45,26 @@ const PlanGate: React.FC<PlanGateProps> = ({ requiredPlan, children }) => {
   const plan = PLANS[requiredPlan];
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', minHeight: 520 }}>
       {/* Preview desfocado do conteúdo */}
-      <div style={{ filter: 'blur(3px)', opacity: 0.35, pointerEvents: 'none', userSelect: 'none', maxHeight: 420, overflow: 'hidden' }}>
+      <div style={{ filter: 'blur(4px)', opacity: 0.3, pointerEvents: 'none', userSelect: 'none', maxHeight: 380, overflow: 'hidden' }}>
         {children}
       </div>
 
-      {/* Overlay gradiente na parte de baixo do preview */}
+      {/* Overlay escurecido */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 200,
-        background: 'linear-gradient(to bottom, transparent, #F5F3FF)',
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to bottom, rgba(245,243,255,0.5) 0%, rgba(245,243,255,0.95) 40%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Card de upgrade */}
+      {/* Card de upgrade — centralizado com flex */}
       <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}>
+      <div style={{
         width: '100%', maxWidth: 440,
         background: 'white',
         borderRadius: 24,
@@ -137,6 +140,7 @@ const PlanGate: React.FC<PlanGateProps> = ({ requiredPlan, children }) => {
             Cancele quando quiser · Sem fidelidade
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
