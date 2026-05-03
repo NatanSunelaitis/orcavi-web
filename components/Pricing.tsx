@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Zap, Users, Sparkles, Tag, ArrowRight, Shield, Clock } from 'lucide-react';
+import { Check, Zap, Users, Sparkles, Tag, ArrowRight, Shield, Clock, Crown, AlertCircle } from 'lucide-react';
 import { PLANS, PlanId } from '../config/plans';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,22 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'https://orcavi-api.vercel.app';
 
 const PricingPage: React.FC = () => {
   const { user } = useAuth();
-  const { plan: currentPlan } = usePlan();
+  const { plan: currentPlan, planExpiresAt } = usePlan();
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelPlan = async () => {
+    if (!user) return;
+    setCancelling(true);
+    await supabase.from('profiles').update({ plan: 'free', plan_expires_at: null }).eq('id', user.uid);
+    setCancelling(false);
+    setCancelConfirm(false);
+    window.location.reload();
+  };
+
+  const expiresText = planExpiresAt
+    ? new Date(planExpiresAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
   const [couponCode, setCouponCode] = useState('');
   const [couponStatus, setCouponStatus] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
   const [couponData, setCouponData] = useState<any>(null);
@@ -98,6 +113,39 @@ const PricingPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
+
+      {/* Banner plano atual (não free) */}
+      {currentPlan !== 'free' && (
+        <div style={{ background: currentPlan === 'pro' ? 'linear-gradient(135deg, #EDE9FE, #F5F3FF)' : 'linear-gradient(135deg, #D1FAE5, #ECFDF5)', border: `1px solid ${currentPlan === 'pro' ? '#C4B5FD' : '#6EE7B7'}`, borderRadius: 16, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Crown size={18} color={currentPlan === 'pro' ? '#7C5CFC' : '#059669'} />
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: currentPlan === 'pro' ? '#7C5CFC' : '#059669', margin: 0 }}>
+                Você está no plano {currentPlan === 'pro' ? 'Pro' : 'Família'}
+              </p>
+              {expiresText && (
+                <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>Acesso até {expiresText}</p>
+              )}
+            </div>
+          </div>
+          {!cancelConfirm ? (
+            <button onClick={() => setCancelConfirm(true)} style={{ fontSize: 12, color: '#9CA3AF', background: 'none', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Cancelar plano
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertCircle size={14} color="#DC4F3A" />
+              <span style={{ fontSize: 12, color: '#DC4F3A' }}>Confirmar cancelamento?</span>
+              <button onClick={handleCancelPlan} disabled={cancelling} style={{ fontSize: 12, color: 'white', background: '#DC4F3A', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {cancelling ? '...' : 'Sim, cancelar'}
+              </button>
+              <button onClick={() => setCancelConfirm(false)} style={{ fontSize: 12, color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Não
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Header compacto */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
