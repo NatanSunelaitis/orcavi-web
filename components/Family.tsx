@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus, X, Trash2, Users } from 'lucide-react';
+import PlanGate from './PlanGate';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -391,4 +392,8 @@ const Family: React.FC = () => {
   );
 };
 
-export default Family;
+const FamilyGated: React.FC = () => (
+  <PlanGate requiredPlan="family"><Family /></PlanGate>
+);
+
+export default FamilyGated;

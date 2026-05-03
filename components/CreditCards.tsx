@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard, Plus, X, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import PlanGate from './PlanGate';
 
 const fmtBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -299,4 +300,8 @@ const CreditCards: React.FC = () => {
   );
 };
 
-export default CreditCards;
+const CreditCardsGated: React.FC = () => (
+  <PlanGate requiredPlan="pro"><CreditCards /></PlanGate>
+);
+
+export default CreditCardsGated;

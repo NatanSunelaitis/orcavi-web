@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Lightbulb } from 'lucide-react';
+import PlanGate from './PlanGate';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -208,4 +209,8 @@ const Debts: React.FC = () => {
   );
 };
 
-export default Debts;
+const DebtsGated: React.FC = () => (
+  <PlanGate requiredPlan="pro"><Debts /></PlanGate>
+);
+
+export default DebtsGated;

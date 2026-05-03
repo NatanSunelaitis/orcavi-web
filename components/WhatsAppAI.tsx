@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import PlanGate from './PlanGate';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'https://orcavi-api.vercel.app';
@@ -176,4 +177,8 @@ const WhatsAppAI: React.FC = () => {
   );
 };
 
-export default WhatsAppAI;
+const WhatsAppAIGated: React.FC = () => (
+  <PlanGate requiredPlan="family"><WhatsAppAI /></PlanGate>
+);
+
+export default WhatsAppAIGated;

@@ -70,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const active = isActive(item.href);
     return (
       <Link
-        to={locked ? '/pricing' : item.href}
+        to={item.href}
         className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors"
         style={{
           fontSize: 14, fontWeight: 500,
