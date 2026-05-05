@@ -77,6 +77,11 @@ const Family: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState('');
+
   const [activeTab, setActiveTab] = useState<'gastos' | 'acerto'>('gastos');
   const [activeTag, setActiveTag] = useState('Todos');
 
@@ -152,6 +157,25 @@ const Family: React.FC = () => {
     setActiveTab('gastos');
     setActiveTag('Todos');
     await loadGroupDetail(group.id);
+  };
+
+  const joinByCode = async () => {
+    if (!codeInput.trim()) return;
+    setCodeLoading(true);
+    setCodeError('');
+    const { data } = await supabase.rpc('join_group_by_code', { p_code: codeInput.trim().toUpperCase() });
+    setCodeLoading(false);
+    if (!data || data.error) {
+      setCodeError(
+        data?.error === 'expired' ? 'Código expirado. Peça um novo ao administrador.' :
+        data?.error === 'already_member' ? 'Você já é membro deste grupo.' :
+        'Código inválido. Verifique e tente novamente.'
+      );
+      return;
+    }
+    setCodeInput('');
+    setShowCodeInput(false);
+    await loadGroups();
   };
 
   const backToList = () => {
@@ -307,12 +331,41 @@ const Family: React.FC = () => {
             <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0D0D1A', letterSpacing: '-0.025em', margin: 0 }}>Grupos</h1>
             <p style={{ fontSize: 13, color: '#9090B0', margin: '4px 0 0' }}>Família, amigos e eventos compartilhados</p>
           </div>
-          {isFamily && (
-            <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#059669,#047857)', fontSize: 13, fontWeight: 600, color: 'white', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(5,150,105,0.3)' }}>
-              <Plus size={15} /> Novo Grupo
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => { setShowCodeInput(v => !v); setCodeError(''); setCodeInput(''); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 10, border: '1px solid #E8E4FF', background: 'white', fontSize: 13, fontWeight: 600, color: '#6B6B9A', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <Tag size={14} /> Entrar com código
             </button>
-          )}
+            {isFamily && (
+              <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#059669,#047857)', fontSize: 13, fontWeight: 600, color: 'white', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(5,150,105,0.3)' }}>
+                <Plus size={15} /> Novo Grupo
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Code entry panel */}
+        {showCodeInput && (
+          <div style={{ background: 'white', borderRadius: 14, padding: '16px 20px', border: '1px solid #E8E4FF', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0D0D1A', marginBottom: 6 }}>Digite o código de convite</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={codeInput}
+                  onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError(''); }}
+                  onKeyDown={e => e.key === 'Enter' && joinByCode()}
+                  placeholder="Ex: AB12CD"
+                  maxLength={8}
+                  style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: `1px solid ${codeError ? '#DC4F3A' : '#E8E4FF'}`, fontSize: 15, fontFamily: 'inherit', outline: 'none', letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase', color: '#0D0D1A' }}
+                  autoFocus
+                />
+                <button onClick={joinByCode} disabled={codeLoading || !codeInput.trim()} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: codeInput.trim() ? 'linear-gradient(135deg,#059669,#047857)' : '#E8E4FF', color: codeInput.trim() ? 'white' : '#9090B0', fontWeight: 700, fontSize: 13, cursor: codeInput.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                  {codeLoading ? '...' : 'Entrar'}
+                </button>
+              </div>
+              {codeError && <p style={{ fontSize: 12, color: '#DC4F3A', margin: '6px 0 0', fontWeight: 600 }}>{codeError}</p>}
+            </div>
+          </div>
+        )}
 
         {groups.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center', padding: 24 }}>
