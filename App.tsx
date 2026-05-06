@@ -13,6 +13,7 @@ import CreditCards from './components/CreditCards';
 import Debts from './components/Debts';
 import Family from './components/Family';
 import JoinGroup from './components/JoinGroup';
+import Business from './components/Business';
 import WhatsAppAI from './components/WhatsAppAI';
 import Pricing from './components/Pricing';
 import Login from './components/Login';
@@ -50,6 +51,7 @@ const AuthenticatedApp: React.FC = () => {
             <Route path="/debts" element={<Debts />} />
             <Route path="/family" element={<Family />} />
             <Route path="/join/:token" element={<JoinGroup />} />
+            <Route path="/autonomo" element={<Business />} />
             <Route path="/whatsapp-ai" element={<WhatsAppAI />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<Navigate to="/" replace />} />

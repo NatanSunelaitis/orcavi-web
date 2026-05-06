@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Wallet, Calculator, Target, CreditCard, TrendingDown, Users, MessageCircle, Zap, Crown, Menu, X, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, Wallet, Calculator, Target, CreditCard, TrendingDown, Users, MessageCircle, Zap, Crown, Menu, X, LogOut, Settings, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
 import { PLANS } from '../config/plans';
@@ -51,6 +51,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const familyNav = [
     { name: 'Família', href: '/family', icon: Users, requiredPlan: 'family' },
     { name: 'WhatsApp IA', href: '/whatsapp-ai', icon: MessageCircle, requiredPlan: 'family' },
+  ];
+
+  const businessNav = [
+    { name: 'Autônomo / PJ', href: '/autonomo', icon: Briefcase, requiredPlan: 'pro' },
   ];
 
   const isActive = (path: string) => {
@@ -122,6 +126,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
       {familyNav.map(item => (
         <NavItem key={item.name} item={item} locked={!isFamily} />
+      ))}
+
+      {/* Seção Negócios */}
+      <div className="px-3 pt-3 pb-1" style={{ fontSize: 10, fontWeight: 700, color: isPro ? '#F59E0B' : '#3D3D5C', letterSpacing: '0.08em' }}>
+        {isPro ? '— NEGÓCIOS' : 'NEGÓCIOS'}
+      </div>
+      {businessNav.map(item => (
+        <NavItem key={item.name} item={item} locked={!isPro} />
       ))}
     </>
   );
