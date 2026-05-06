@@ -352,13 +352,28 @@ const Family: React.FC = () => {
   const budgetPct = budget ? Math.min(100, (aTotal / budget) * 100) : 0;
   const budgetColor = budgetPct > 90 ? '#DC4F3A' : budgetPct > 70 ? '#F59E0B' : '#059669';
 
-  // ─── Expense split ────────────────────────────────────────────────────
-  const tags = ['Todos', ...Array.from(new Set(expenses.map(e => e.event_tag ?? 'Geral')))];
-  const filteredAll = activeTag === 'Todos' ? expenses : expenses.filter(e => (e.event_tag ?? 'Geral') === activeTag);
+  // ─── Expense filtering — tudo respeita o mês selecionado ─────────────
+  const endOfSelectedMonth = new Date(aYear, aMonth + 1, 0); // último dia do mês
+  const isInSelectedMonth = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.getFullYear() === aYear && d.getMonth() === aMonth;
+  };
 
-  // Separa pendentes (ninguém pagou o credor ainda) de realizadas
-  const pendingExpenses = filteredAll.filter(e => !e.paid_by);
-  const paidExpenses = filteredAll.filter(e => e.paid_by);
+  // Pendentes: sem paid_by E (sem due_date OU due_date <= fim do mês selecionado)
+  // Lógica: pendente sem data flutua em todos os meses; pendente vencida em meses anteriores continua aparecendo
+  const allPending = expenses.filter(e => !e.paid_by && (
+    !e.due_date || new Date(e.due_date + 'T00:00:00') <= endOfSelectedMonth
+  ));
+
+  // Realizadas: paid_by set E date dentro do mês selecionado
+  const allPaidInMonth = expenses.filter(e => !!e.paid_by && isInSelectedMonth(e.date));
+
+  // Aplica filtro de tag em cima do filtro de mês
+  const pendingExpenses = activeTag === 'Todos' ? allPending : allPending.filter(e => (e.event_tag ?? 'Geral') === activeTag);
+  const paidExpenses = activeTag === 'Todos' ? allPaidInMonth : allPaidInMonth.filter(e => (e.event_tag ?? 'Geral') === activeTag);
+
+  // Tags derivadas apenas das despesas do mês visível
+  const tags = ['Todos', ...Array.from(new Set([...allPending, ...allPaidInMonth].map(e => e.event_tag ?? 'Geral')))];
 
   const settlements = calcSettlements(members, expenses);
   const memberById = Object.fromEntries(members.map(m => [m.id, m]));
@@ -477,8 +492,9 @@ const Family: React.FC = () => {
 
   // ─── DETAIL VIEW ──────────────────────────────────────────────────────
   const isEvent = selectedGroup!.type === 'event';
-  const totalGasto = expenses.filter(e => e.paid_by).reduce((s, e) => s + e.amount, 0);
-  const totalPendente = pendingExpenses.reduce((s, e) => s + e.amount, 0);
+  // KPIs do mês selecionado (consistente com o que está exibido nas abas)
+  const totalGasto = allPaidInMonth.reduce((s, e) => s + e.amount, 0);
+  const totalPendente = allPending.reduce((s, e) => s + e.amount, 0);
 
   return (
     <div>
@@ -527,6 +543,15 @@ const Family: React.FC = () => {
             </div>
           </div>
 
+          {/* Navegador de mês — global, acima de todas as abas */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, background: 'white', borderRadius: 12, padding: '10px 16px', border: '1px solid #E8E4FF' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#0D0D1A' }}>{MONTHS_FULL[aMonth]} {aYear}</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={() => setAnalyticsMonth(m => m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 })} style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E8E4FF', background: '#F9F8FF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={14} color="#6B6B9A" /></button>
+              <button onClick={() => { if (!isCurrentMonth) setAnalyticsMonth(m => m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }); }} disabled={isCurrentMonth} style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E8E4FF', background: '#F9F8FF', cursor: isCurrentMonth ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isCurrentMonth ? 0.35 : 1 }}><ChevronRight size={14} color="#6B6B9A" /></button>
+            </div>
+          </div>
+
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 4, background: '#F5F3FF', borderRadius: 12, padding: 4, marginBottom: 20, width: 'fit-content' }}>
             {([['overview','Visão Geral'],['gastos','Despesas'],['acerto','Acerto'],['membros','Membros']] as const).map(([key, label]) => (
@@ -541,13 +566,6 @@ const Family: React.FC = () => {
           {/* ── Tab: Visão Geral ── */}
           {activeTab === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#0D0D1A' }}>{MONTHS_FULL[aMonth]} {aYear}</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button onClick={() => setAnalyticsMonth(m => m.month === 0 ? { year: m.year-1, month: 11 } : { year: m.year, month: m.month-1 })} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #E8E4FF', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={15} color="#6B6B9A" /></button>
-                  <button onClick={() => { if (!isCurrentMonth) setAnalyticsMonth(m => m.month === 11 ? { year: m.year+1, month: 0 } : { year: m.year, month: m.month+1 }); }} disabled={isCurrentMonth} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #E8E4FF', background: 'white', cursor: isCurrentMonth ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isCurrentMonth ? 0.4 : 1 }}><ChevronRight size={15} color="#6B6B9A" /></button>
-                </div>
-              </div>
 
               {budget ? (
                 <div style={{ background: 'white', borderRadius: 14, padding: '16px 20px', border: '1px solid #E8E4FF' }}>
@@ -626,7 +644,7 @@ const Family: React.FC = () => {
                   })}
                 </div>
               )}
-              {aExpenses.length === 0 && <div style={{ textAlign: 'center', padding: '40px', background: 'white', borderRadius: 14, border: '1px solid #E8E4FF' }}><p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>Nenhum gasto pago em {MONTHS_FULL[aMonth]}.</p></div>}
+              {allPaidInMonth.length === 0 && allPending.length === 0 && <div style={{ textAlign: 'center', padding: '40px', background: 'white', borderRadius: 14, border: '1px solid #E8E4FF' }}><p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>Nenhuma despesa em {MONTHS_FULL[aMonth]}.</p></div>}
             </div>
           )}
 
@@ -749,9 +767,9 @@ const Family: React.FC = () => {
                 </div>
               )}
 
-              {filteredAll.length === 0 && (
+              {pendingExpenses.length === 0 && paidExpenses.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '48px', background: 'white', borderRadius: 14, border: '1px solid #E8E4FF' }}>
-                  <p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>Nenhuma despesa. Use o lançamento rápido ou "+ Despesa".</p>
+                  <p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>Nenhuma despesa em {MONTHS_FULL[aMonth]}.</p>
                 </div>
               )}
             </div>
