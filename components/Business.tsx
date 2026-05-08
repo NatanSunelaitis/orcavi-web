@@ -76,7 +76,9 @@ const BusinessInner: React.FC = () => {
   const [personalMonthlyExpenses, setPersonalMonthlyExpenses] = useState(0);
 
   const [activeTab, setActiveTab] = useState<'inicio' | 'transacoes' | 'reservas' | 'analises'>('inicio');
-  const [txFilter, setTxFilter] = useState<'all' | 'revenue' | 'expense' | 'prolabore'>('all');
+  const [txFilter, setTxFilter] = useState<'all' | 'revenue' | 'expense' | 'prolabore' | 'nf'>('all');
+  const [selectedNFIds, setSelectedNFIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => { const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() }; });
   const [goalReachedDismissed, setGoalReachedDismissed] = useState(false);
 
@@ -339,8 +341,33 @@ const BusinessInner: React.FC = () => {
 
   const filteredTx = transactions.filter(t => {
     if (!inMonth(t.date)) return false;
+    if (txFilter === 'nf') return t.type === 'revenue' && t.nf_status && t.nf_status !== 'NAO_SE_APLICA';
     return txFilter === 'all' || t.type === txFilter;
+  }).sort((a, b) => {
+    if (txFilter !== 'nf') return 0;
+    if (a.nf_status === 'PENDENTE' && b.nf_status !== 'PENDENTE') return -1;
+    if (a.nf_status !== 'PENDENTE' && b.nf_status === 'PENDENTE') return 1;
+    return 0;
   });
+
+  const pendingNFTxs = filteredTx.filter(t => t.nf_status === 'PENDENTE');
+  const allPendingSelected = pendingNFTxs.length > 0 && pendingNFTxs.every(t => selectedNFIds.has(t.id));
+  const somePendingSelected = pendingNFTxs.some(t => selectedNFIds.has(t.id));
+
+  const markSelectedAsEmitted = async () => {
+    if (selectedNFIds.size === 0) return;
+    setBulkLoading(true);
+    await Promise.all(Array.from(selectedNFIds).map(id =>
+      supabase.from('business_transactions').update({ nf_status: 'EMITIDA' }).eq('id', id)
+    ));
+    setTransactions(ts => ts.map(t => selectedNFIds.has(t.id) ? { ...t, nf_status: 'EMITIDA' } : t));
+    setSelectedNFIds(new Set());
+    setBulkLoading(false);
+  };
+
+  const toggleNFSelect = (id: string) => {
+    setSelectedNFIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
 
   const entryGrossNum = Number(entryGross);
   const entryExpenseNum = Number(entryExpense);
@@ -612,29 +639,110 @@ const BusinessInner: React.FC = () => {
       {/* ── Tab: Transações ── */}
       {activeTab === 'transacoes' && (
         <div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-            {([['all','Todos'],['revenue','Receitas'],['expense','Despesas'],['prolabore','Pró-labore']] as const).map(([key, label]) => (
-              <button key={key} onClick={() => setTxFilter(key)} style={{ padding: '6px 12px', borderRadius: 99, border: `1.5px solid ${txFilter === key ? '#7C5CFC' : '#E8E4FF'}`, background: txFilter === key ? '#EDE9FE' : 'white', color: txFilter === key ? '#7C5CFC' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
-            ))}
+          {/* Filter chips */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            {([
+              ['all', 'Todos'], ['revenue', 'Receitas'], ['expense', 'Despesas'],
+              ['prolabore', 'Pró-labore'], ['nf', '📄 Notas Fiscais'],
+            ] as const).map(([key, label]) => {
+              const isNF = key === 'nf';
+              const pendingCount = isNF ? transactions.filter(t => t.type === 'revenue' && t.nf_status === 'PENDENTE' && inMonth(t.date)).length : 0;
+              return (
+                <button key={key}
+                  onClick={() => { setTxFilter(key); setSelectedNFIds(new Set()); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 99, border: `1.5px solid ${txFilter === key ? (isNF ? '#92400E' : '#7C5CFC') : '#E8E4FF'}`, background: txFilter === key ? (isNF ? '#FEF3C7' : '#EDE9FE') : 'white', color: txFilter === key ? (isNF ? '#92400E' : '#7C5CFC') : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {label}
+                  {isNF && pendingCount > 0 && (
+                    <span style={{ background: '#92400E', color: 'white', fontSize: 10, fontWeight: 800, borderRadius: 99, padding: '0px 5px', minWidth: 16, textAlign: 'center' }}>{pendingCount}</span>
+                  )}
+                </button>
+              );
+            })}
+            {txFilter === 'nf' && (
+              <span style={{ fontSize: 11, color: '#9090B0' }}>
+                {pendingNFTxs.length} pendente{pendingNFTxs.length !== 1 ? 's' : ''} · {filteredTx.filter(t => t.nf_status === 'EMITIDA').length} emitida{filteredTx.filter(t => t.nf_status === 'EMITIDA').length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-          {filteredTx.length === 0 ? <div style={{ textAlign: 'center', padding: '48px', background: 'white', borderRadius: 14, border: '1px solid #E8E4FF' }}><p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>Nenhum lançamento.</p></div> : (
-            <div style={{ background: 'white', borderRadius: 14, border: '1px solid #E8E4FF', overflow: 'hidden' }}>
+
+          {/* Bulk action bar */}
+          {txFilter === 'nf' && selectedNFIds.size > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1A1A2E', borderRadius: 12, padding: '10px 16px', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>
+                {selectedNFIds.size} nota{selectedNFIds.size !== 1 ? 's' : ''} selecionada{selectedNFIds.size !== 1 ? 's' : ''}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setSelectedNFIds(new Set())} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #3D3D5C', background: 'transparent', color: '#9090B0', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Limpar
+                </button>
+                <button onClick={markSelectedAsEmitted} disabled={bulkLoading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: 'none', background: '#059669', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: bulkLoading ? 0.7 : 1 }}>
+                  <Check size={13} />
+                  {bulkLoading ? 'Atualizando...' : `Marcar ${selectedNFIds.size} como Emitida${selectedNFIds.size !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Transaction list */}
+          {filteredTx.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px', background: 'white', borderRadius: 14, border: '1px solid #E8E4FF' }}>
+              <p style={{ color: '#9090B0', fontSize: 14, margin: 0 }}>
+                {txFilter === 'nf' ? 'Nenhuma nota fiscal neste mês.' : 'Nenhum lançamento.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ background: 'white', borderRadius: 14, border: `1px solid ${txFilter === 'nf' ? '#FDE68A' : '#E8E4FF'}`, overflow: 'hidden' }}>
+
+              {/* Master checkbox row (NF mode only) */}
+              {txFilter === 'nf' && pendingNFTxs.length > 0 && (
+                <div style={{ padding: '10px 18px', borderBottom: '1px solid #FEF3C7', display: 'flex', alignItems: 'center', gap: 10, background: '#FFFBEB' }}>
+                  <input
+                    type="checkbox"
+                    checked={allPendingSelected}
+                    ref={el => { if (el) el.indeterminate = somePendingSelected && !allPendingSelected; }}
+                    onChange={() => allPendingSelected
+                      ? setSelectedNFIds(new Set())
+                      : setSelectedNFIds(new Set(pendingNFTxs.map(t => t.id)))
+                    }
+                    style={{ width: 15, height: 15, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#92400E' }}>
+                    {allPendingSelected ? 'Desmarcar todas' : `Selecionar todas pendentes (${pendingNFTxs.length})`}
+                  </span>
+                </div>
+              )}
+
+              {/* Rows */}
               {filteredTx.map((t, i) => {
-                const isRev = t.type === 'revenue'; const isPL = t.type === 'prolabore';
+                const isRev = t.type === 'revenue';
+                const isPL = t.type === 'prolabore';
                 const color = isRev ? '#059669' : isPL ? '#7C5CFC' : '#DC4F3A';
+                const isPending = t.nf_status === 'PENDENTE';
+                const isSelected = selectedNFIds.has(t.id);
                 return (
-                  <div key={t.id} style={{ padding: '13px 18px', borderBottom: i < filteredTx.length - 1 ? '1px solid #F9F8FF' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={t.id}
+                    style={{ padding: '13px 18px', borderBottom: i < filteredTx.length - 1 ? '1px solid #F9F8FF' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isSelected ? '#F0FDF4' : 'white', transition: 'background 0.1s' }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {/* Checkbox (NF mode + pending only) */}
+                      {txFilter === 'nf' && (
+                        isPending
+                          ? <input type="checkbox" checked={isSelected} onChange={() => toggleNFSelect(t.id)} style={{ width: 15, height: 15, cursor: 'pointer', flexShrink: 0 }} />
+                          : <div style={{ width: 15, flexShrink: 0 }} />
+                      )}
                       <div style={{ width: 32, height: 32, borderRadius: 9, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {isRev ? <TrendingUp size={14} color={color} /> : isPL ? <ArrowUpRight size={14} color={color} /> : <TrendingDown size={14} color={color} />}
                       </div>
-                      <div><div style={{ fontSize: 13, fontWeight: 600, color: '#0D0D1A' }}>{t.description}</div><div style={{ fontSize: 11, color: '#9090B0' }}>{t.category} · {t.date}{t.units > 0 ? ` · ${t.units} ${profile.unit_label}` : ''}</div></div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0D0D1A' }}>{t.description}</div>
+                        <div style={{ fontSize: 11, color: '#9090B0' }}>{t.category} · {t.date}{t.units > 0 ? ` · ${t.units} ${profile.unit_label}` : ''}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                       {isRev && t.nf_status && t.nf_status !== 'NAO_SE_APLICA' && (
-                        <button onClick={() => updateNFStatus(t.id, t.nf_status === 'PENDENTE' ? 'EMITIDA' : 'PENDENTE')}
-                          style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: t.nf_status === 'PENDENTE' ? '#FEF3C7' : '#ECFDF5', color: t.nf_status === 'PENDENTE' ? '#92400E' : '#065F46' }}>
-                          {t.nf_status === 'PENDENTE' ? '📄 NF Pendente' : '✅ NF Emitida'}
+                        <button onClick={() => updateNFStatus(t.id, isPending ? 'EMITIDA' : 'PENDENTE')}
+                          style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: isPending ? '#FEF3C7' : '#ECFDF5', color: isPending ? '#92400E' : '#065F46' }}>
+                          {isPending ? '📄 NF Pendente' : '✅ NF Emitida'}
                         </button>
                       )}
                       <span style={{ fontSize: 13, fontWeight: 700, color }}>{isRev ? '+' : '−'}{fmtBRL(t.gross_amount)}</span>
