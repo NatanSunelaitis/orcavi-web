@@ -59,7 +59,7 @@ const PROFESSION_TYPES: ProfessionConfig[] = [
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface Profile { id: string; profession_type: string; profession_label: string; unit_label: string; asset_name?: string; wear_rate_per_unit: number; monthly_goal?: number; working_days?: number; }
-interface Transaction { id: string; type: 'revenue' | 'expense' | 'prolabore'; description: string; gross_amount: number; units: number; category: string; date: string; }
+interface Transaction { id: string; type: 'revenue' | 'expense' | 'prolabore'; description: string; gross_amount: number; units: number; category: string; date: string; nf_status?: 'PENDENTE' | 'EMITIDA' | 'NAO_SE_APLICA'; }
 interface Fund { id: string; name: string; rule_type: 'percent' | 'per_unit' | 'fixed'; rule_value: number; balance: number; color: string; emoji: string; }
 interface PersonalAccount { id: string; name: string; balance: number; }
 interface ReserveCalc { fundId: string; name: string; emoji: string; color: string; amount: number; }
@@ -96,6 +96,7 @@ const BusinessInner: React.FC = () => {
   const [entryExpense, setEntryExpense] = useState('');
   const [entryExpenseCat, setEntryExpenseCat] = useState('Outros');
   const [entryExpenseDesc, setEntryExpenseDesc] = useState('');
+  const [entryRequiresNF, setEntryRequiresNF] = useState(true);
   const [entryDate, setEntryDate] = useState(todayStr());
   const [entryPreview, setEntryPreview] = useState<ReserveCalc[] | null>(null);
   const [entryLoading, setEntryLoading] = useState(false);
@@ -260,6 +261,7 @@ const BusinessInner: React.FC = () => {
       user_id: user.uid, type: 'revenue',
       description: units > 0 ? `Receita — ${units} ${profile.unit_label}` : 'Receita',
       gross_amount: gross, units, category: 'Receita', date: entryDate,
+      nf_status: entryRequiresNF ? 'PENDENTE' : 'NAO_SE_APLICA',
     }).select().single();
 
     if (expense > 0) {
@@ -274,7 +276,7 @@ const BusinessInner: React.FC = () => {
       }
     }
 
-    setShowEntry(false); setEntryGross(''); setEntryUnits(''); setEntryExpense(''); setEntryExpenseDesc(''); setEntryPreview(null); setEntryDate(todayStr()); setEntryLoading(false);
+    setShowEntry(false); setEntryGross(''); setEntryUnits(''); setEntryExpense(''); setEntryExpenseDesc(''); setEntryPreview(null); setEntryDate(todayStr()); setEntryLoading(false); setEntryRequiresNF(true);
     setGoalReachedDismissed(false);
     await loadAll();
   };
@@ -313,6 +315,11 @@ const BusinessInner: React.FC = () => {
     await supabase.from('business_reserve_funds').insert({ user_id: user.uid, name: fundForm.name, rule_type: fundForm.rule_type, rule_value: Number(fundForm.rule_value), emoji: fundForm.emoji, color: fundForm.color, balance: 0 });
     setShowFundModal(false); setFundForm({ name: '', rule_type: 'percent', rule_value: '', emoji: '🏦', color: '#059669' });
     await loadAll();
+  };
+
+  const updateNFStatus = async (id: string, status: 'PENDENTE' | 'EMITIDA') => {
+    await supabase.from('business_transactions').update({ nf_status: status }).eq('id', id);
+    setTransactions(ts => ts.map(t => t.id === id ? { ...t, nf_status: status } : t));
   };
 
   const deleteFund = async (id: string) => {
@@ -482,6 +489,25 @@ const BusinessInner: React.FC = () => {
         </div>
       </div>
 
+      {/* NF pending alert */}
+      {(() => {
+        const pending = transactions.filter(t => t.type === 'revenue' && t.nf_status === 'PENDENTE');
+        if (pending.length === 0) return null;
+        return (
+          <div style={{ background: '#FEF3C7', borderRadius: 12, padding: '11px 16px', marginBottom: 10, display: 'flex', gap: 10, alignItems: 'center', border: '1px solid #FDE68A' }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>📄</span>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#92400E' }}>
+                {pending.length} nota{pending.length > 1 ? 's fiscais pendentes' : ' fiscal pendente'} de emissão
+              </span>
+              <span style={{ fontSize: 12, color: '#92400E', opacity: 0.75, marginLeft: 6 }}>
+                Clique em "NF Pendente" na lista para marcar como emitida.
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Goal reached banner */}
       {goalReached && (
         <div style={{ background: 'linear-gradient(135deg,#059669,#047857)', borderRadius: 14, padding: '16px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -566,7 +592,15 @@ const BusinessInner: React.FC = () => {
                         <div style={{ fontSize: 11, color: '#9090B0' }}>{t.date === today ? '🔵 Hoje' : t.date} · {t.category}{t.units > 0 ? ` · ${t.units} ${profile.unit_label}` : ''}</div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color }}>{isRev ? '+' : '−'}{fmtBRL(t.gross_amount)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {isRev && t.nf_status && t.nf_status !== 'NAO_SE_APLICA' && (
+                        <button onClick={() => updateNFStatus(t.id, t.nf_status === 'PENDENTE' ? 'EMITIDA' : 'PENDENTE')}
+                          style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: t.nf_status === 'PENDENTE' ? '#FEF3C7' : '#ECFDF5', color: t.nf_status === 'PENDENTE' ? '#92400E' : '#065F46' }}>
+                          {t.nf_status === 'PENDENTE' ? '📄 NF Pendente' : '✅ NF Emitida'}
+                        </button>
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 700, color }}>{isRev ? '+' : '−'}{fmtBRL(t.gross_amount)}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -596,7 +630,15 @@ const BusinessInner: React.FC = () => {
                       </div>
                       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#0D0D1A' }}>{t.description}</div><div style={{ fontSize: 11, color: '#9090B0' }}>{t.category} · {t.date}{t.units > 0 ? ` · ${t.units} ${profile.unit_label}` : ''}</div></div>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color }}>{isRev ? '+' : '−'}{fmtBRL(t.gross_amount)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {isRev && t.nf_status && t.nf_status !== 'NAO_SE_APLICA' && (
+                        <button onClick={() => updateNFStatus(t.id, t.nf_status === 'PENDENTE' ? 'EMITIDA' : 'PENDENTE')}
+                          style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: t.nf_status === 'PENDENTE' ? '#FEF3C7' : '#ECFDF5', color: t.nf_status === 'PENDENTE' ? '#92400E' : '#065F46' }}>
+                          {t.nf_status === 'PENDENTE' ? '📄 NF Pendente' : '✅ NF Emitida'}
+                        </button>
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 700, color }}>{isRev ? '+' : '−'}{fmtBRL(t.gross_amount)}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -749,6 +791,17 @@ const BusinessInner: React.FC = () => {
                 <div><label style={lbl}>{profConfig?.icon} Qtde de {profile.unit_label.toLowerCase()}</label><input style={inp} type="number" placeholder="0" value={entryUnits} onChange={e => { setEntryUnits(e.target.value); setEntryPreview(null); }} /></div>
                 <div><label style={lbl}>Data</label><input style={inp} type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} /></div>
               </div>
+              {/* NF toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F9F8FF', borderRadius: 10, border: '1px solid #E8E4FF' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#374151', flex: 1 }}>
+                  <input type="checkbox" checked={entryRequiresNF} onChange={e => setEntryRequiresNF(e.target.checked)} />
+                  📄 Exige emissão de Nota Fiscal?
+                </label>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: entryRequiresNF ? '#FEF3C7' : '#F5F3FF', color: entryRequiresNF ? '#92400E' : '#9090B0' }}>
+                  {entryRequiresNF ? 'NF Pendente' : 'Não se aplica'}
+                </span>
+              </div>
+
               <div>
                 <label style={lbl}>💸 Gasto imediato? (opcional)</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: entryExpense ? 8 : 0 }}>
